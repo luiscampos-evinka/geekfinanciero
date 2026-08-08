@@ -236,6 +236,31 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .cifra.alerta{background:var(--warn-soft)}
 .cifra.alerta .k{color:var(--warn)}
 
+/* condiciones especiales: plegadas para no asustar a quien tiene un crédito normal */
+details.especial{border:1px solid var(--rule);border-radius:12px;background:var(--inset);overflow:hidden}
+details.especial > summary{padding:13px 15px;cursor:pointer;list-style:none;
+  display:flex;align-items:center;gap:10px;font-size:.9rem;font-weight:650;color:var(--ink-2)}
+details.especial > summary::-webkit-details-marker{display:none}
+details.especial > summary::after{content:"\25be";margin-left:auto;color:var(--ink-3);transition:transform .18s ease}
+details.especial[open] > summary::after{transform:rotate(180deg)}
+details.especial > summary:hover{background:color-mix(in srgb, var(--ink) 4%, transparent)}
+details.especial > .dentro{padding:4px 15px 16px}
+.switchfila{display:flex;align-items:center;gap:12px;cursor:pointer;padding:6px 0}
+.switchfila .switch{flex:0 0 auto}
+.switchfila:has(input:checked) .switch{background:var(--brand)}
+.switchfila:has(input:checked) .switch::after{transform:translateX(17px)}
+.switchfila:has(input:focus-visible) .switch{outline:2px solid var(--brand);outline-offset:2px}
+input[type=month],select{font-family:var(--ff-num);font-variant-numeric:tabular-nums;
+  font-size:1rem;font-weight:600;width:100%;padding:11px 13px;border:1.5px solid var(--rule-2);
+  border-radius:10px;background:var(--inset);color:var(--ink)}
+select{font-family:var(--ff-ui);font-size:.93rem}
+input[type=month]:focus,select:focus{outline:none;border-color:var(--brand);
+  background:var(--surface);box-shadow:0 0 0 3px var(--brand-soft)}
+.aviso-legal{background:var(--warn-soft);border-radius:11px;padding:15px 17px;font-size:.88rem;line-height:1.6}
+.aviso-legal strong{display:block;margin-bottom:5px;font-size:.95rem}
+.aviso-legal .frase{font-family:var(--ff-num);font-weight:700;background:var(--surface);
+  padding:3px 8px;border-radius:6px;display:inline-block;margin:4px 0}
+
 /* ---------- la elección explicada con dibujo ---------- */
 .eleccion{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media (max-width:560px){ .eleccion{grid-template-columns:1fr} }
@@ -531,11 +556,64 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
             <p class="nota" id="nota-portes" hidden>Portes, comisión por el envío del estado de cuenta, seguro del auto o de la casa. Son montos chicos que no dependen de la tasa, pero se pagan todos los meses y sí encarecen el crédito.</p>
           </div>
           <div class="field">
+            <label for="f-seguro">Seguro del bien
+              <button type="button" class="ayuda" data-nota="nota-seguro" aria-expanded="false" aria-label="Qué es el seguro del bien">?</button>
+            </label>
+            <div class="inputwrap has-pre"><span class="affix pre cur">S/</span><input type="number" id="f-seguro" value="0" min="0" step="10" inputmode="decimal"></div>
+            <span class="hint">Al mes. Del auto o del inmueble.</span>
+            <p class="nota" id="nota-seguro" hidden>Si el crédito es de auto o de casa, el seguro del bien es <b>obligatorio todo el plazo</b> y va aparte del desgravamen. Entra en la TCEA: si no lo pones, tu costo real sale más bajo de lo que en verdad es.</p>
+          </div>
+          <div class="field">
             <label for="f-comision">Comisión al desembolsar</label>
             <div class="inputwrap has-pre"><span class="affix pre cur">S/</span><input type="number" id="f-comision" value="0" min="0" step="50" inputmode="decimal"></div>
             <span class="hint">Se descuenta de lo que recibes.</span>
           </div>
         </div>
+
+        <details class="especial">
+          <summary>¿Tu crédito tiene algo especial? — gracia, cuota balón, doble cuota</summary>
+          <div class="dentro">
+            <div class="grid c3">
+              <div class="field">
+                <label for="f-inicio">¿Cuándo pagas la primera cuota?</label>
+                <input type="month" id="f-inicio" value="2026-09">
+                <span class="hint">Para ponerle fecha real a cada cuota.</span>
+              </div>
+              <div class="field">
+                <label for="f-gracia">Meses de gracia
+                  <button type="button" class="ayuda" data-nota="nota-gracia" aria-expanded="false" aria-label="Qué es el periodo de gracia">?</button>
+                </label>
+                <div class="inputwrap has-post wide"><input type="number" id="f-gracia" value="0" min="0" max="36" step="1" inputmode="numeric"><span class="affix post">meses</span></div>
+              </div>
+              <div class="field">
+                <label for="f-gracia-tipo">Durante la gracia</label>
+                <select id="f-gracia-tipo">
+                  <option value="parcial">Pago solo los intereses</option>
+                  <option value="total">No pago nada</option>
+                </select>
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <p class="nota" id="nota-gracia" hidden>Meses del inicio en los que todavía no bajas la deuda. Si <b>pagas solo los intereses</b>, tu saldo se queda igual. Si <b>no pagas nada</b>, esos intereses se suman a la deuda y sales debiendo <b>más</b> de lo que te prestaron. En los dos casos el crédito se alarga.</p>
+              </div>
+              <div class="field">
+                <label for="f-balon">Cuota balón
+                  <button type="button" class="ayuda" data-nota="nota-balon" aria-expanded="false" aria-label="Qué es la cuota balón">?</button>
+                </label>
+                <div class="inputwrap has-pre"><span class="affix pre cur">S/</span><input type="number" id="f-balon" value="0" min="0" step="500" inputmode="decimal"></div>
+                <span class="hint">Típica en crédito vehicular.</span>
+              </div>
+              <div class="field" style="grid-column:span 2">
+                <label class="switchfila">
+                  <span class="switch"><input type="checkbox" id="f-doble"></span>
+                  <span><b>Doble cuota en julio y diciembre</b><br><span style="color:var(--ink-3);font-size:.85rem">14 cuotas al año, atadas a tus gratificaciones.</span></span>
+                </label>
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <p class="nota" id="nota-balon" hidden>Una última cuota grande al final — en crédito vehicular suele ser el <b>40 % del valor del auto</b>. Te baja mucho la cuota mensual, pero pagas <b>más intereses</b>, porque durante todo el crédito le debes más al banco. Abajo te digo cuánto más.</p>
+              </div>
+            </div>
+          </div>
+        </details>
 
         <div class="resumen" id="resumen-credito"></div>
 
@@ -572,6 +650,16 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
         </div>
       </header>
       <div class="body">
+
+        <div class="aviso-legal">
+          <strong>Ojo con cómo se lo pides al banco — no es un detalle.</strong>
+          «Adelanto de cuotas» y «pago anticipado a capital» <b>no son lo mismo</b>: el primero te cubre
+          cuotas futuras que ya vienen cargadas de intereses; el segundo baja tu deuda, que es lo que
+          este simulador calcula. Pide siempre, con estas palabras:
+          <span class="frase">pago anticipado a capital, con reducción de plazo</span> (o «…con reducción
+          de cuota»). Por la <b>Ley N.° 28587</b> no te pueden cobrar penalidad por pagar antes, y están
+          <b>obligados a preguntarte</b> cuál de las dos quieres.
+        </div>
 
         <div>
           <h3 style="margin-bottom:4px">Primero: ¿qué quieres ganar?</h3>
@@ -829,9 +917,27 @@ function pmt(i, n, pv) {
   return pv * i / (1 - Math.pow(1 + i, -n));
 }
 
+/** Cuota del sistema francés dejando un saldo final (cuota balón) sin pagar. */
+function pmtBalon(i, n, pv, balon) {
+  if (n <= 0) return pv;
+  const fv = Math.max(0, balon || 0);
+  if (i <= 0) return Math.max(0, pv - fv) / n;
+  return i * (pv - fv * Math.pow(1 + i, -n)) / (1 - Math.pow(1 + i, -n));
+}
+
+/** Mes del calendario (1-12) de la cuota número `k`, contando desde la fecha de inicio. */
+function mesCalendario(inicio, k) {
+  return ((inicio.mes - 1 + k) % 12) + 1;
+}
+function fechaDeCuota(inicio, k) {
+  const total = (inicio.mes - 1) + k;
+  return { anio: inicio.anio + Math.floor(total / 12), mes: (total % 12) + 1 };
+}
+
 /**
  * Construye el cronograma completo.
- * cfg: {principal, tea, meses, desg, portes, comision,
+ * cfg: {principal, tea, meses, desg, portes, seguroBien, comision, balon,
+ *       gracia:{meses,tipo:'parcial'|'total'}|null, dobleCuota:bool, inicio:{anio,mes},
  *       puntuales:[{mes,monto}], mensual:{monto,desde,hasta}|null,
  *       compra:{mes,tea,plazo,costo,financiar}|null, modo:'plazo'|'cuota'}
  */
@@ -839,18 +945,42 @@ function cronograma(cfg) {
   const rows = [];
   let i = tem(cfg.tea);
   const iDesg = tem(cfg.desg);
+  const gastosMes = (cfg.portes || 0) + (cfg.seguroBien || 0);
+  const inicio = cfg.inicio || { anio: 2026, mes: 1 };
+  const balon = Math.max(0, cfg.balon || 0);
   let saldo = cfg.principal;
-  let finMes = cfg.meses;                  // mes en que debería terminar el crédito
-  let cuota = pmt(i, cfg.meses, saldo);
-  const cuotaInicial = cuota;
+  let mes = 0;
   let mesCompra = null;
+
+  // ---- periodo de gracia: primero, y no consume plazo
+  const gr = (cfg.gracia && cfg.gracia.meses > 0) ? cfg.gracia : null;
+  if (gr) {
+    const n = Math.min(gr.meses, MAX_MESES);
+    for (let g = 0; g < n && saldo > EPS; g++) {
+      mes++;
+      const saldoIni = saldo;
+      const interes = saldoIni * i;
+      const desgravamen = saldoIni * iDesg;
+      // gracia parcial: pagas solo el interés. gracia total: no pagas y se capitaliza.
+      const cuotaMes = gr.tipo === 'total' ? 0 : interes;
+      if (gr.tipo === 'total') saldo = saldoIni + interes;
+      rows.push({
+        mes, fecha: fechaDeCuota(inicio, mes - 1), saldoIni, cuota: cuotaMes,
+        interes, amort: 0, extra: 0, desgravamen, saldoFin: saldo, gracia: true
+      });
+    }
+  }
+
+  const mesesAmort = Math.max(1, cfg.meses);
+  let finMes = mes + mesesAmort;             // mes en que debería terminar
+  let cuota = pmtBalon(i, mesesAmort, saldo, balon);
+  const cuotaInicial = cuota;
 
   const puntualesPorMes = new Map();
   for (const p of (cfg.puntuales || [])) {
     if (p.monto > 0 && p.mes >= 1) puntualesPorMes.set(p.mes, (puntualesPorMes.get(p.mes) || 0) + p.monto);
   }
 
-  let mes = 0;
   while (saldo > EPS && mes < MAX_MESES) {
     mes++;
 
@@ -860,29 +990,35 @@ function cronograma(cfg) {
       if (cfg.compra.financiar) saldo += cfg.compra.costo;
       i = tem(cfg.compra.tea);
       finMes = mes - 1 + Math.max(1, cfg.compra.plazo);
-      cuota = pmt(i, cfg.compra.plazo, saldo);
+      cuota = pmtBalon(i, cfg.compra.plazo, saldo, 0);
     }
 
     const saldoIni = saldo;
     const interes = saldoIni * i;
     const desgravamen = saldoIni * iDesg;
 
-    // La última cuota se ajusta para no pagar de más.
-    const cuotaMes = Math.min(cuota, saldoIni + interes);
+    // Con cuota balón, el último mes se paga todo lo que queda.
+    const ultima = balon > 0 && mes >= finMes;
+    const cuotaMes = ultima ? saldoIni + interes : Math.min(cuota, saldoIni + interes);
     let amort = cuotaMes - interes;
 
     let extra = 0;
     if (cfg.mensual && mes >= cfg.mensual.desde && mes <= cfg.mensual.hasta) extra += cfg.mensual.monto;
     if (puntualesPorMes.has(mes)) extra += puntualesPorMes.get(mes);
-    extra = Math.max(0, Math.min(extra, saldoIni - amort));   // nunca amortizar más que el saldo
+    // Doble cuota: en julio y diciembre se paga una cuota extra que va íntegra a capital.
+    const mesCal = mesCalendario(inicio, mes - 1);
+    const esDoble = cfg.dobleCuota && (mesCal === 7 || mesCal === 12) && !ultima;
+    if (esDoble) extra += cuota;
+
+    extra = Math.max(0, Math.min(extra, saldoIni - amort));
 
     amort += extra;
     const saldoFin = Math.max(0, saldoIni - amort);
 
     rows.push({
-      mes, saldoIni, cuota: cuotaMes, interes,
+      mes, fecha: fechaDeCuota(inicio, mes - 1), saldoIni, cuota: cuotaMes, interes,
       amort: amort - extra, extra, desgravamen, saldoFin,
-      compra: mes === mesCompra
+      compra: mes === mesCompra, doble: esDoble, balon: ultima
     });
 
     saldo = saldoFin;
@@ -890,7 +1026,7 @@ function cronograma(cfg) {
     // Reducir cuota: se recalcula sobre el plazo que queda, manteniendo la fecha final.
     if (cfg.modo === 'cuota' && extra > 0 && saldo > EPS) {
       const restantes = finMes - mes;
-      cuota = restantes > 0 ? pmt(i, restantes, saldo) : saldo;
+      cuota = restantes > 0 ? pmtBalon(i, restantes, saldo, balon) : saldo;
     }
   }
 
@@ -900,14 +1036,14 @@ function cronograma(cfg) {
     totalInteres += r.interes; totalDesg += r.desgravamen;
     totalCuotas += r.cuota;    totalExtra += r.extra;
   }
-  const gastosMens = (cfg.portes || 0) * rows.length;
+  const gastosTotales = gastosMes * rows.length;
   const costoCompra = (cfg.compra && mesCompra !== null && !cfg.compra.financiar) ? cfg.compra.costo : 0;
-  const desembolso = totalCuotas + totalExtra + totalDesg + gastosMens + (cfg.comision || 0) + costoCompra;
+  const desembolso = totalCuotas + totalExtra + totalDesg + gastosTotales + (cfg.comision || 0) + costoCompra;
 
   // ---- TCEA: TIR mensual de los flujos reales, anualizada
   const flujos = [cfg.principal - (cfg.comision || 0)];
-  rows.forEach((r, k) => {
-    let pago = r.cuota + r.extra + r.desgravamen + (cfg.portes || 0);
+  rows.forEach(r => {
+    let pago = r.cuota + r.extra + r.desgravamen + gastosMes;
     if (r.compra && !cfg.compra.financiar) pago += cfg.compra.costo;
     flujos.push(-pago);
   });
@@ -919,22 +1055,23 @@ function cronograma(cfg) {
     cuotaFinal: rows.length ? rows[rows.length - 1].cuota : 0,
     cuotaVigente: cuotaVigenteDe(rows),
     meses: rows.length,
-    totalInteres, totalDesg, totalCuotas, totalExtra, gastosMens, desembolso,
-    tcea, mesCompra
+    mesesGracia: gr ? Math.min(gr.meses, MAX_MESES) : 0,
+    totalInteres, totalDesg, totalCuotas, totalExtra,
+    gastosMens: gastosTotales, desembolso, tcea, mesCompra, balon
   };
 }
 
-/** La cuota que realmente estarás pagando: la del último mes con saldo relevante. */
+/** La cuota que realmente estarás pagando: ignora la gracia y el pago residual final. */
 function cuotaVigenteDe(rows) {
-  if (!rows.length) return 0;
-  for (let k = rows.length - 1; k >= 0; k--) {
-    if (rows[k].saldoIni > EPS) {
-      // saltamos la última si fue un pago residual muy por debajo de la anterior
-      if (k > 0 && rows[k].cuota < rows[k - 1].cuota * 0.9) continue;
-      return rows[k].cuota;
+  const utiles = rows.filter(r => !r.gracia);
+  if (!utiles.length) return rows.length ? rows[0].cuota : 0;
+  for (let k = utiles.length - 1; k >= 0; k--) {
+    if (utiles[k].saldoIni > EPS) {
+      if (k > 0 && utiles[k].cuota < utiles[k - 1].cuota * 0.9) continue;
+      return utiles[k].cuota;
     }
   }
-  return rows[0].cuota;
+  return utiles[0].cuota;
 }
 
 /** TIR por bisección: robusta y suficiente para flujos de crédito. */
@@ -961,6 +1098,9 @@ const money  = n => CUR + ' ' + nf(n);
 const money0 = n => CUR + ' ' + nf(n, 0);
 const pct    = (n, d = 2) => nf(n * 100, d) + ' %';
 const plural = (n, s, p) => n === 1 ? `1 ${s}` : `${nf(n, 0)} ${p}`;
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const mesCorto = f => f ? `${MESES[f.mes - 1]} ${String(f.anio).slice(2)}` : '';
 
 function meses2texto(m) {
   const a = Math.floor(m / 12), r = m % 12;
@@ -1170,9 +1310,17 @@ function leerConfig() {
   const meses = Math.max(1, Math.min(MAX_MESES, Math.round(val('#f-plazo', 60))));
   const modo = document.querySelector('input[name=modo]:checked').value;
 
+  const mIni = ($('#f-inicio').value || '2026-09').split('-');
+  const gm = Math.max(0, Math.round(val('#f-gracia', 0)));
+
   const base = {
     principal, tea: val('#f-tea') / 100, meses,
-    desg: val('#f-desg') / 100, portes: val('#f-portes'), comision: val('#f-comision'),
+    desg: val('#f-desg') / 100, portes: val('#f-portes'),
+    seguroBien: val('#f-seguro'), comision: val('#f-comision'),
+    balon: Math.max(0, val('#f-balon')),
+    gracia: gm > 0 ? { meses: gm, tipo: $('#f-gracia-tipo').value } : null,
+    dobleCuota: $('#f-doble').checked,
+    inicio: { anio: parseInt(mIni[0], 10) || 2026, mes: parseInt(mIni[1], 10) || 9 },
     puntuales: [], mensual: null, compra: null, modo
   };
 
@@ -1267,6 +1415,40 @@ function insights(base, plan, cfg) {
       texto: `Hasta ese mes ya habrás entregado <b>${money0(antes)}</b> solo en intereses. Por eso adelantar ` +
              `temprano vale mucho más que adelantar tarde: al inicio casi toda tu cuota es alquiler del ` +
              `dinero, no es tu deuda bajando.`
+    });
+  }
+
+  // --- lo que cuesta la cuota balón, medido contra el mismo crédito sin ella
+  if (cfg.base.balon > 0) {
+    const sinBalon = cronograma(Object.assign({}, cfg.base, { balon: 0 }));
+    const masIntereses = base.totalInteres - sinBalon.totalInteres;
+    const menosCuota = sinBalon.cuotaInicial - base.cuotaInicial;
+    out.push({
+      tono: 'warn', mark: 'balón',
+      titulo: `La cuota balón te alivia ${money(menosCuota)} al mes y te cuesta ${money0(masIntereses)}`,
+      texto: `Pagas <b>${money(base.cuotaInicial)}</b> al mes en vez de <b>${money(sinBalon.cuotaInicial)}</b>, ` +
+             `pero al final te espera una cuota de <b>${money0(cfg.base.balon)}</b> y en total pagas ` +
+             `<b>${money0(masIntereses)}</b> más en intereses. Es más caro porque durante todo el crédito ` +
+             `le debes más al banco. Pregúntate si vas a tener esa plata el último mes — si no, te tocará ` +
+             `refinanciarla y pagar intereses otra vez.`
+    });
+  }
+
+  // --- lo que cuesta el periodo de gracia
+  if (base.mesesGracia > 0) {
+    const sinGracia = cronograma(Object.assign({}, cfg.base, { gracia: null }));
+    const costo = base.totalInteres - sinGracia.totalInteres;
+    const total = cfg.base.gracia.tipo === 'total';
+    out.push({
+      tono: 'warn', mark: base.mesesGracia + 'm',
+      titulo: `Esos ${plural(base.mesesGracia, 'mes', 'meses')} de gracia te cuestan ${money0(costo)}`,
+      texto: total
+        ? `Durante la gracia no pagas nada, pero los intereses se van sumando a la deuda: al terminar ` +
+          `debes <b>${money0(base.rows[base.mesesGracia - 1].saldoFin)}</b>, más de lo que te prestaron. ` +
+          `Y el crédito se estira a ${meses2texto(base.meses)}.`
+        : `Durante la gracia pagas solo intereses, así que tu deuda no baja ni un sol en ` +
+          `${plural(base.mesesGracia, 'mes', 'meses')}. El crédito se estira a ${meses2texto(base.meses)} ` +
+          `y esos intereses son plata que no recuperas.`
     });
   }
 
@@ -1481,7 +1663,7 @@ function pintarTabla() {
   const res = cual === 'base' ? ultimo.base : ultimo.plan;
   $('#tbl tbody').innerHTML = res.rows.map(r => `
     <tr class="${r.extra > 0 ? 'paid' : ''}${r.compra ? ' buyout' : ''}">
-      <td>${r.mes}${r.compra ? ' · te compran' : ''}</td>
+      <td>${r.mes} <span style="color:var(--ink-3)">${mesCorto(r.fecha)}</span>${r.gracia ? ' · gracia' : ''}${r.doble ? ' · doble' : ''}${r.balon ? ' · balón' : ''}${r.compra ? ' · te compran' : ''}</td>
       <td>${nf(r.saldoIni)}</td><td>${nf(r.cuota)}</td><td>${nf(r.interes)}</td>
       <td>${nf(r.amort)}</td>
       <td class="${r.extra > 0 ? 'extra' : ''}">${r.extra > 0 ? nf(r.extra) : '—'}</td>
@@ -1748,6 +1930,8 @@ function conectar() {
     i.addEventListener('input', recalcular);
     i.addEventListener('change', recalcular);
   });
+
+  $$('#view-sim select').forEach(sl => sl.addEventListener('change', recalcular));
 
   $$('input[name=crono]').forEach(r => r.addEventListener('change', pintarTabla));
 
