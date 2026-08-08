@@ -134,6 +134,33 @@ p{margin:0}
 /* ---------- cabecera ---------- */
 .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .topbar .t{flex:1 1 400px;min-width:0}
+.marca{display:flex;align-items:center;gap:11px;margin-bottom:2px}
+.marca svg{display:block;flex:0 0 auto}
+.marca .nombre{font-family:var(--ff-display);font-weight:600;font-size:1.12rem;letter-spacing:-.015em}
+.marca .nombre em{font-style:normal;color:var(--brand)}
+
+/* --- cuenta y muro de pago --- */
+.cuenta{display:flex;align-items:center;gap:8px}
+.cuenta .correo{font-size:.8rem;color:var(--ink-3);max-width:170px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+dialog{border:none;padding:0;border-radius:var(--r);background:var(--surface);color:var(--ink);
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.5);max-width:min(440px,calc(100vw - 32px));width:100%}
+dialog::backdrop{background:rgba(12,14,11,.55);backdrop-filter:blur(2px)}
+dialog .dcuerpo{padding:26px}
+dialog h3{font-family:var(--ff-display);font-weight:600;font-size:1.35rem;margin-bottom:6px}
+dialog .dpie{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.aviso-cuenta{font-size:.85rem;padding:12px 14px;border-radius:9px;margin-top:14px;line-height:1.5}
+.aviso-cuenta.ok{background:var(--brand-soft);color:var(--ink)}
+.aviso-cuenta.mal{background:var(--warn-soft);color:var(--ink)}
+.muro{display:flex;flex-direction:column;gap:14px}
+.muro .precio{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.muro .precio .n{font-family:var(--ff-display);font-weight:600;font-size:2.3rem;color:var(--brand);line-height:1}
+.muro .precio .tachado{font-family:var(--ff-num);color:var(--ink-3);text-decoration:line-through}
+.muro .precio .mes{color:var(--ink-2);font-size:.95rem}
+.muro ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}
+.muro li{font-size:.92rem;color:var(--ink-2)}
+.cupon{display:flex;gap:9px;align-items:flex-end;flex-wrap:wrap}
+.cupon .field{flex:1 1 170px;max-width:230px}
 .topbar .tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
 /* ---------- controles ---------- */
@@ -456,7 +483,14 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
 
   <header class="topbar">
     <div class="t">
-      <span class="eyebrow">Créditos en Perú</span>
+      <div class="marca">
+        <svg width="34" height="34" viewBox="0 0 52 52" aria-hidden="true">
+          <path d="M6 6 V19 H19 V32 H32 V45 H45" fill="none" stroke="var(--brand)" stroke-width="6.5"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="45" cy="45" r="5.5" fill="var(--brand)"/>
+        </svg>
+        <span class="nombre">Geek<em> Financiero</em></span>
+      </div>
       <h1>¿Cuánto te ahorras si adelantas pagos?</h1>
       <p class="lede" style="margin-top:8px">Pon los datos de tu crédito, dinos cuánto puedes adelantar y mira —en soles y en meses— qué pasa. Sin fórmulas: los números salen solos.</p>
     </div>
@@ -465,6 +499,8 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
         <label><input type="radio" name="moneda" value="S/" checked><span>S/</span></label>
         <label><input type="radio" name="moneda" value="$"><span>$</span></label>
       </div>
+      <span class="cuenta"><span class="correo" id="mi-correo" hidden></span>
+        <button type="button" id="btn-entrar">Entrar</button></span>
       <button type="button" id="btn-print">Imprimir</button>
       <button type="button" id="btn-theme" aria-label="Cambiar entre tema claro y oscuro">Tema</button>
     </div>
@@ -793,6 +829,12 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
       </div>
     </section>
 
+    <section class="tarjeta" id="tarjeta-guardar">
+      <header><div class="t"><h2>Guarda este crédito</h2>
+        <p class="lede">Regístralo una vez y cada mes te dice cuánto llevas, cuánto falta y cuánto has ahorrado.</p></div></header>
+      <div class="body" id="zona-guardar"></div>
+    </section>
+
     <section class="tarjeta">
       <header><div class="t"><h2>Cómo baja tu deuda</h2><p class="lede">Cada línea es lo que todavía le debes al banco, mes a mes.</p></div></header>
       <div class="body">
@@ -892,6 +934,22 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
 
 </div>
 </div>
+
+<dialog id="dlg-entrar">
+  <div class="dcuerpo">
+    <h3>Entra sin contraseña</h3>
+    <p class="lede" style="font-size:.92rem">Pon tu correo y te mandamos un enlace. No hay contraseñas que recordar ni que se puedan filtrar.</p>
+    <div class="field" style="margin-top:16px">
+      <label for="f-correo">Tu correo</label>
+      <div class="inputwrap"><input type="email" id="f-correo" placeholder="tu@correo.com" autocomplete="email"></div>
+    </div>
+    <div id="aviso-entrar"></div>
+    <div class="dpie">
+      <button type="button" id="btn-cancelar" class="ghost">Cancelar</button>
+      <button type="button" id="btn-enviar" style="background:var(--brand);border-color:var(--brand);color:var(--on-brand)">Mándame el enlace</button>
+    </div>
+  </div>
+</dialog>
 
 <div class="barra no-print" id="barra" hidden>
   <span>Te ahorras</span>
@@ -1983,6 +2041,225 @@ function conectar() {
   });
 }
 
+/* ============================================================
+   9. CUENTA Y MURO DE PAGO
+   ============================================================ */
+
+const API = 'https://geekfinanciero-api.geekfinanciero.workers.dev';
+const CLAVE_SESION = 'gf-sesion';
+
+let yo = null;          // {correo, activo, venceEn, precio} o null
+let cuponPuesto = null; // el último cupón validado
+
+const sesion = {
+  get() { try { return localStorage.getItem(CLAVE_SESION); } catch { return null; } },
+  set(v) { try { v ? localStorage.setItem(CLAVE_SESION, v) : localStorage.removeItem(CLAVE_SESION); } catch {} },
+};
+
+/** Llama al API poniendo la sesión en la cabecera (el sitio y el API son dominios distintos). */
+async function api(ruta, opciones = {}) {
+  const s = sesion.get();
+  try {
+    const r = await fetch(API + ruta, {
+      ...opciones,
+      headers: {
+        'content-type': 'application/json',
+        ...(s ? { authorization: 'Bearer ' + s } : {}),
+        ...(opciones.headers || {}),
+      },
+    });
+    let cuerpo = null;
+    try { cuerpo = await r.json(); } catch {}
+    return { ok: r.ok, estado: r.status, cuerpo };
+  } catch (e) {
+    // sin red o API caída: el simulador tiene que seguir funcionando igual
+    return { ok: false, estado: 0, cuerpo: { error: 'No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.' } };
+  }
+}
+
+/** Al volver del enlace del correo, la sesión llega en el fragmento (#sesion=...). */
+function recogeSesionDeLaUrl() {
+  const m = location.hash.match(/sesion=([^&]+)/);
+  if (!m) return false;
+  sesion.set(decodeURIComponent(m[1]));
+  // se limpia de la barra de direcciones para que no quede en el historial
+  history.replaceState(null, '', location.pathname + location.search);
+  return true;
+}
+
+async function refrescarCuenta() {
+  const el = $('#mi-correo'), boton = $('#btn-entrar');
+  if (!sesion.get()) { yo = null; el.hidden = true; boton.textContent = 'Entrar'; return pintarMuro(); }
+  const { cuerpo } = await api('/api/yo');
+  yo = (cuerpo && cuerpo.correo) ? cuerpo : null;
+  if (!yo) { sesion.set(null); el.hidden = true; boton.textContent = 'Entrar'; return pintarMuro(); }
+  el.hidden = false;
+  el.textContent = yo.correo;
+  boton.textContent = 'Salir';
+  pintarMuro();
+}
+
+function fechaLarga(epoch) {
+  return new Date(epoch * 1000).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function pintarMuro() {
+  const z = $('#zona-guardar');
+  if (!z) return;
+
+  // --- sin cuenta
+  if (!yo) {
+    z.innerHTML = `
+      <div class="muro">
+        <p class="lede">Entra con tu correo y guarda el crédito que acabas de simular. Después
+        podrás volver y ver cómo va, sin escribir los datos otra vez.</p>
+        <div><button type="button" id="muro-entrar"
+          style="background:var(--brand);border-color:var(--brand);color:var(--on-brand)">Entrar con mi correo</button></div>
+      </div>`;
+    $('#muro-entrar').addEventListener('click', abrirEntrar);
+    return;
+  }
+
+  // --- con cuenta al día
+  if (yo.activo) {
+    z.innerHTML = `
+      <div class="muro">
+        <div class="aviso-cuenta ok">Tu suscripción está al día hasta el <b>${fechaLarga(yo.venceEn)}</b>.</div>
+        <div class="field" style="max-width:320px">
+          <label for="f-nombre-credito">¿Cómo le llamas a este crédito?</label>
+          <div class="inputwrap"><input type="text" id="f-nombre-credito" value="Mi crédito" maxlength="60"></div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button type="button" id="muro-guardar"
+            style="background:var(--brand);border-color:var(--brand);color:var(--on-brand)">Guardar este crédito</button>
+          <button type="button" id="muro-listar" class="ghost">Ver los que guardé</button>
+        </div>
+        <div id="muro-resultado"></div>
+      </div>`;
+    $('#muro-guardar').addEventListener('click', guardarCredito);
+    $('#muro-listar').addEventListener('click', listarCreditos);
+    return;
+  }
+
+  // --- con cuenta pero sin pagar: el muro
+  const p = cuponPuesto || { precio: yo.precio, precioFinal: yo.precio, cupon: null };
+  const conDescuento = p.precioFinal < p.precio;
+  z.innerHTML = `
+    <div class="muro">
+      <div class="precio">
+        ${conDescuento ? `<span class="tachado">S/ ${nf(p.precio)}</span>` : ''}
+        <span class="n">S/ ${nf(p.precioFinal)}</span><span class="mes">al mes</span>
+        ${p.cupon ? `<span style="color:var(--brand);font-weight:700;font-size:.9rem">${p.cupon.etiqueta || p.cupon.codigo}</span>` : ''}
+      </div>
+      <ul>
+        <li>Guarda tus créditos y vuelve a verlos cuando quieras</li>
+        <li>El acta para pedirle al banco el pago a capital, con las palabras exactas</li>
+        <li>Aviso cuando llegue la grati o el CTS, con cuánto te ahorrarías</li>
+      </ul>
+      <div class="cupon">
+        <div class="field">
+          <label for="f-cupon">¿Tienes un cupón?</label>
+          <div class="inputwrap"><input type="text" id="f-cupon" placeholder="LANZAMIENTO" maxlength="24"></div>
+        </div>
+        <button type="button" id="muro-cupon" class="ghost">Aplicar</button>
+      </div>
+      <div id="muro-cupon-aviso"></div>
+      <div>
+        <button type="button" id="muro-pagar" disabled
+          style="opacity:.55;cursor:not-allowed">Suscribirme</button>
+      </div>
+      <p class="card-note" style="font-size:.85rem;color:var(--ink-3)">El cobro se activa apenas
+      Izipay apruebe la afiliación. Mientras tanto puedes probar tu cupón.</p>
+    </div>`;
+  $('#muro-cupon').addEventListener('click', aplicarCupon);
+  $('#f-cupon').addEventListener('keydown', e => { if (e.key === 'Enter') aplicarCupon(); });
+}
+
+async function aplicarCupon() {
+  const cod = $('#f-cupon').value.trim();
+  const av = $('#muro-cupon-aviso');
+  if (!cod) return;
+  const { cuerpo } = await api('/api/precio?cupon=' + encodeURIComponent(cod));
+  if (!cuerpo) return;
+  if (cuerpo.error) {
+    cuponPuesto = null;
+    av.innerHTML = `<div class="aviso-cuenta mal">${cuerpo.error}</div>`;
+    return;
+  }
+  cuponPuesto = cuerpo;
+  pintarMuro();
+  $('#muro-cupon-aviso').innerHTML =
+    `<div class="aviso-cuenta ok">Cupón aplicado: pagas <b>S/ ${nf(cuerpo.precioFinal)}</b> en vez de S/ ${nf(cuerpo.precio)}.</div>`;
+}
+
+async function guardarCredito() {
+  if (!ultimo) return;
+  const nombre = ($('#f-nombre-credito').value || 'Mi crédito').trim();
+  const { ok, estado, cuerpo } = await api('/api/creditos', {
+    method: 'POST',
+    body: JSON.stringify({ nombre, datos: ultimo.cfg.plan }),
+  });
+  const av = $('#muro-resultado');
+  if (ok) av.innerHTML = `<div class="aviso-cuenta ok">Guardado. Ya puedes volver cuando quieras.</div>`;
+  else if (estado === 402) { await refrescarCuenta(); }
+  else av.innerHTML = `<div class="aviso-cuenta mal">${(cuerpo && cuerpo.error) || 'No se pudo guardar.'}</div>`;
+}
+
+async function listarCreditos() {
+  const { ok, cuerpo } = await api('/api/creditos');
+  const av = $('#muro-resultado');
+  if (!ok || !cuerpo || !cuerpo.creditos) { av.innerHTML = `<div class="aviso-cuenta mal">No se pudo leer.</div>`; return; }
+  if (!cuerpo.creditos.length) { av.innerHTML = `<div class="aviso-cuenta ok">Todavía no has guardado ninguno.</div>`; return; }
+  av.innerHTML = `<div class="aviso-cuenta ok">${cuerpo.creditos.map(c =>
+    `<div><b>${c.nombre}</b> — ${money0((c.datos && c.datos.principal) || 0)} · guardado el ${fechaLarga(c.creado_en)}</div>`
+  ).join('')}</div>`;
+}
+
+function abrirEntrar() {
+  $('#aviso-entrar').innerHTML = '';
+  $('#dlg-entrar').showModal();
+  $('#f-correo').focus();
+}
+
+async function pedirEnlace() {
+  const correo = $('#f-correo').value.trim();
+  const av = $('#aviso-entrar');
+  if (!/^[^@\s]+@[^@\s.]+\.[^@\s]{2,}$/.test(correo)) {
+    av.innerHTML = `<div class="aviso-cuenta mal">Ese correo no parece válido.</div>`;
+    return;
+  }
+  $('#btn-enviar').disabled = true;
+  const { ok, cuerpo } = await api('/api/entrar', { method: 'POST', body: JSON.stringify({ correo }) });
+  $('#btn-enviar').disabled = false;
+  if (!ok || !cuerpo || cuerpo.error) {
+    av.innerHTML = `<div class="aviso-cuenta mal">${(cuerpo && cuerpo.error) || 'No se pudo enviar. Inténtalo de nuevo.'}</div>`;
+    return;
+  }
+  av.innerHTML = cuerpo.enviado
+    ? `<div class="aviso-cuenta ok">Listo. Revisa <b>${correo}</b>: el enlace vence en 20 minutos.</div>`
+    : `<div class="aviso-cuenta mal">Tu cuenta quedó creada, pero el envío de correos todavía no
+       está activo, así que el enlace no salió. Estamos en eso.</div>`;
+}
+
+function conectarCuenta() {
+  $('#btn-entrar').addEventListener('click', () => {
+    if (sesion.get()) { sesion.set(null); refrescarCuenta(); }
+    else abrirEntrar();
+  });
+  $('#btn-cancelar').addEventListener('click', () => $('#dlg-entrar').close());
+  $('#btn-enviar').addEventListener('click', pedirEnlace);
+  $('#f-correo').addEventListener('keydown', e => { if (e.key === 'Enter') pedirEnlace(); });
+
+  if (recogeSesionDeLaUrl()) {
+    // llegó del correo: se le avisa que ya entró
+    setTimeout(() => {
+      const z = $('#tarjeta-guardar');
+      if (z) z.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 600);
+  }
+  refrescarCuenta();
+}
+
 restaurar();
 aplicarMoneda();
 pintarAmortizaciones();
@@ -1996,6 +2273,8 @@ $('#view-cmp').hidden = document.querySelector('input[name=vista]:checked').valu
 $('#view-sim').hidden = !$('#view-cmp').hidden;
 
 // gancho de pruebas: permite verificar la matemática desde la consola
+conectarCuenta();
+
 window.__sim = { cronograma, pmt, tem, tir, cuotaVigenteDe };
 
 })();
