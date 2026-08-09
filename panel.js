@@ -20,6 +20,8 @@
     { minimumFractionDigits: d, maximumFractionDigits: d }).format(isFinite(n) ? n : 0);
   const fecha = e => !e ? '—' : new Date(e * 1000)
     .toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: '2-digit' });
+  const fechaHora = e => !e ? '—' : new Date(e * 1000)
+    .toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
   const sesion = () => { try { return localStorage.getItem('gf-sesion'); } catch { return null; } };
   async function pedir(ruta, opciones = {}) {
@@ -136,6 +138,17 @@
         <thead><tr><th>Código</th><th>Quién</th><th>Tipo</th><th>Cuándo</th></tr></thead>
         <tbody>${d.reclamos.ultimos.map(r => `<tr><td><b>${esc(r.codigo)}</b></td>
           <td>${esc(r.nombre)}</td><td>${esc(r.tipo)}</td><td>${fecha(r.creado_en)}</td></tr>`).join('')}
+        </tbody></table></div>` : ''}
+
+      ${(d.errores && d.errores.length) ? `<h2>Errores del servidor</h2>
+      <p style="color:var(--ink-2);font-size:.9rem;margin:0 0 12px">Lo que reventó por dentro. Si
+      alguien te dice que le sale «error interno», aquí está el porqué.</p>
+      <div class="tablawrap"><table>
+        <thead><tr><th>Cuándo</th><th>Dónde</th><th>Qué pasó</th></tr></thead>
+        <tbody>${d.errores.map(e => `<tr>
+          <td>${fechaHora(e.creado_en)}</td>
+          <td><b>${esc(e.metodo || '')} ${esc(e.ruta)}</b></td>
+          <td style="white-space:normal">${esc(e.mensaje)}</td></tr>`).join('')}
         </tbody></table></div>` : ''}
 
       <h2>Arreglar una cuenta a mano</h2>
