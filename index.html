@@ -1894,7 +1894,7 @@ function conectar() {
 const API = 'https://geekfinanciero-api.geekfinanciero.workers.dev';
 const CLAVE_SESION = 'gf-sesion';
 
-let yo = null;          // {correo, activo, venceEn, precio} o null
+let yo = null;          // {correo, activo, admin, venceEn, precio} o null
 let cuponPuesto = null; // el último cupón que alguien escribió a mano
 let OFERTA = null;      // la promoción viva, tal como la da el servidor
 // Si la vitrina anuncia S/ 10, la caja tiene que cobrar S/ 10 sin que nadie
@@ -2145,7 +2145,10 @@ function pintarMuro() {
   if (yo.activo) {
     z.innerHTML = `
       <div class="muro">
-        <div class="aviso-cuenta ok">Tu suscripción está al día hasta el <b>${fechaLarga(yo.venceEn)}</b>.</div>
+        <div class="aviso-cuenta ok">${yo.admin
+          ? 'Entraste como <b>administrador</b>: tienes todo abierto y no se te cobra nada. ' +
+            '<a href="/panel.html" style="color:inherit;font-weight:700">Ir al panel →</a>'
+          : `Tu suscripción está al día hasta el <b>${fechaLarga(yo.venceEn)}</b>.`}</div>
         <div class="field" style="max-width:320px">
           <label for="f-nombre-credito">¿Cómo le llamas a este crédito?</label>
           <div class="inputwrap"><input type="text" id="f-nombre-credito" value="Mi crédito" maxlength="60"></div>
