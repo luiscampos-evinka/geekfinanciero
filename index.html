@@ -2165,14 +2165,29 @@ function pintarMuro() {
       </div>
       <div id="muro-cupon-aviso"></div>
       <div>
-        <button type="button" id="muro-pagar" disabled
-          style="opacity:.55;cursor:not-allowed">Suscribirme</button>
+        <button type="button" id="muro-pagar"
+          style="background:var(--brand);border-color:var(--brand);color:var(--on-brand)">Suscribirme por S/ ${nf(p.precioFinal)}</button>
       </div>
-      <p class="card-note" style="font-size:.85rem;color:var(--ink-3)">El cobro se activa apenas
-      Izipay apruebe la afiliación. Mientras tanto puedes probar tu cupón.</p>
+      <div id="muro-pago-aviso"></div>
+      <p class="card-note" style="font-size:.85rem;color:var(--ink-3)">Pagas con tarjeta, Yape o
+      transferencia a través de Flow. Se renueva solo si vuelves a pagar: no hay cobro automático
+      ni permanencia.</p>
     </div>`;
   $('#muro-cupon').addEventListener('click', aplicarCupon);
   $('#f-cupon').addEventListener('keydown', e => { if (e.key === 'Enter') aplicarCupon(); });
+  $('#muro-pagar').addEventListener('click', irAPagar);
+}
+
+async function irAPagar() {
+  const boton = $('#muro-pagar'), av = $('#muro-pago-aviso');
+  boton.disabled = true; boton.textContent = 'Preparando el pago…';
+  const { ok, cuerpo } = await api('/api/pago/crear', {
+    method: 'POST',
+    body: JSON.stringify({ cupon: cuponPuesto && cuponPuesto.cupon ? cuponPuesto.cupon.codigo : null }),
+  });
+  if (ok && cuerpo && cuerpo.ir) { location.href = cuerpo.ir; return; }
+  boton.disabled = false; boton.textContent = 'Suscribirme';
+  av.innerHTML = `<div class="aviso-cuenta mal">${(cuerpo && cuerpo.error) || 'No se pudo iniciar el pago.'}</div>`;
 }
 
 async function aplicarCupon() {
@@ -2250,6 +2265,11 @@ function conectarCuenta() {
   $('#btn-enviar').addEventListener('click', pedirEnlace);
   $('#f-correo').addEventListener('keydown', e => { if (e.key === 'Enter') pedirEnlace(); });
 
+  if (new URLSearchParams(location.search).get('pago') === 'listo') {
+    // Flow avisa al servidor por su cuenta, y eso puede tardar unos segundos
+    setTimeout(refrescarCuenta, 2500);
+    setTimeout(refrescarCuenta, 7000);
+  }
   if (recogeSesionDeLaUrl()) {
     // llegó del correo: se le avisa que ya entró
     setTimeout(() => {
