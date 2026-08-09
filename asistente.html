@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cuéntame tu crédito y te digo cuánto pagas · Geek Financiero</title>
-<meta name="description" content="Escríbelo como se lo contarías a un amigo —«debo 85 mil al 14 % a cinco años y en julio me entra la grati»— y te decimos tu cuota, tus intereses y tu costo real. Sin llenar formularios y sin registrarte.">
+<title>Asesor de créditos: cuéntaselo con tus palabras · Geek Financiero</title>
+<meta name="description" content="Un asesor que conversa: le cuentas tu crédito con tus palabras y te dice tu cuota, tus intereses y tu costo real. ¿No sabes tu tasa? Con cuánto pagas al mes la deduce. Gratis y sin registrarte.">
 <meta name="robots" content="index,follow,max-snippet:-1">
 <link rel="canonical" href="https://geekfinanciero.com/asistente.html">
 <meta property="og:type" content="website">
@@ -16,6 +16,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/icono-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/icono-16.png">
 <link rel="apple-touch-icon" href="/icono-180.png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://geekfinanciero-api.geekfinanciero.workers.dev; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
 <link rel="stylesheet" href="/legal.css">
 <style>
   .hoja{max-width:720px}
@@ -43,6 +44,25 @@
     border-radius:999px;background:none;color:var(--ink-2);cursor:pointer;text-align:left}
   .ejemplos button:hover{border-color:var(--brand);color:var(--ink)}
 
+  .charla{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
+  .msg{max-width:88%;padding:13px 17px;border-radius:16px;font-size:.97rem;line-height:1.58;
+    animation:entra .28s ease}
+  .msg.yo{align-self:flex-end;background:var(--brand);color:var(--on-brand);border-bottom-right-radius:5px}
+  .msg.ia{align-self:flex-start;background:var(--inset);border-bottom-left-radius:5px}
+  .msg.mal{align-self:flex-start;background:#f8efd8;color:#1b1710;border-bottom-left-radius:5px}
+  @keyframes entra{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .escribiendo{align-self:flex-start;display:flex;gap:5px;padding:15px 18px;background:var(--inset);
+    border-radius:16px;border-bottom-left-radius:5px}
+  .escribiendo i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);
+    animation:bota 1.1s ease-in-out infinite}
+  .escribiendo i:nth-child(2){animation-delay:.15s}
+  .escribiendo i:nth-child(3){animation-delay:.3s}
+  @keyframes bota{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+  .fichas{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+  .fichas span{font-size:.78rem;background:var(--surface);border:1px solid var(--rule);
+    border-radius:999px;padding:3px 10px;font-variant-numeric:tabular-nums}
+  .fichas span.deducida{border-color:var(--brand);color:var(--ink)}
+  @media (prefers-reduced-motion:reduce){.msg{animation:none}.escribiendo i{animation:none}}
   #salida{margin-top:30px}
   .entendi{background:var(--inset);border-radius:12px;padding:15px 18px;font-size:.95rem;
     line-height:1.55;margin-bottom:18px}
@@ -87,25 +107,25 @@
     <span>Geek<em> Financiero</em></span>
   </a>
 
-  <h1>Cuéntame tu crédito como se lo contarías a un amigo</h1>
-  <p class="lede">Nada de formularios. Escríbelo con tus palabras y te digo cuánto pagas al mes,
-  cuántos intereses te llevas encima y cuál es tu costo real. <b>Gratis y sin cuenta.</b></p>
+  <h1 id="saludo">Cuéntame tu crédito<br>como se lo contarías a un amigo</h1>
+  <p class="lede">¿No sabes tu tasa? No importa. Si sabes <b>cuánto pagas al mes</b>, la deduzco.
+  Vamos conversando y te voy pidiendo un dato a la vez.</p>
+
+  <div id="charla" class="charla" aria-live="polite"></div>
 
   <div class="caja">
-    <label for="texto" class="sr-only" style="position:absolute;left:-9999px">Cuéntame tu crédito</label>
-    <!-- spellcheck off: el corrector del navegador subrayaba en rojo "grati", "CTS" y hasta las
-         cifras, y daba la impresión de que lo escrito estaba mal. -->
-    <textarea id="texto" maxlength="600" rows="3" autocomplete="off"
-      spellcheck="false" autocorrect="off" autocapitalize="sentences"
-      placeholder="Por ejemplo: debo 85 mil al 14 % a cinco años, y en julio me entra la grati, unos 8 mil…"></textarea>
+    <label for="texto" style="position:absolute;left:-9999px">Escribe tu mensaje</label>
+    <textarea id="texto" maxlength="700" rows="2" autocomplete="off"
+      spellcheck="false" autocorrect="off"
+      placeholder="Escribe aquí… por ejemplo: pago 900 al mes por mi moto"></textarea>
     <div class="pieCaja">
-      <span class="cuenta" id="cuenta">0 / 600</span>
-      <button type="button" class="enviar" id="enviar">Calcular</button>
+      <span class="cuenta" id="cuenta">0 / 700</span>
+      <button type="button" class="enviar" id="enviar">Enviar</button>
     </div>
   </div>
 
   <div class="ejemplos" id="ejemplos"></div>
-  <div id="salida" aria-live="polite"></div>
+  <div id="salida"></div>
 
   <p class="aviso">Lo que escribes se usa solo para entender tu caso y no se guarda. Las cifras las
   calcula el mismo motor del simulador, no un modelo de lenguaje: la inteligencia artificial aquí

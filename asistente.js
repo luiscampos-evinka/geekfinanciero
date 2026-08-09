@@ -1,11 +1,10 @@
 /**
- * El asistente, por el lado del navegador.
+ * El asesor, por el lado del navegador. Es una conversación: la persona
+ * escribe, el asesor responde y va pidiendo un dato a la vez.
  *
- * Hace dos llamadas y nada más: /api/entender traduce la frase a campos, y
- * /api/simular calcula. Las cifras NUNCA salen del modelo de lenguaje —solo
- * los campos—, así que no puede inventarse un ahorro. Y lo que se enseña aquí
- * es la parte gratuita: cuota, intereses y TCEA. El ahorro por pagar a capital
- * sigue detrás de la suscripción, igual que en el simulador.
+ * LA REGLA: el modelo redacta, el MOTOR calcula. Las cifras que se ven abajo
+ * —cuota, intereses, TCEA— salen de /api/simular, nunca del texto del modelo.
+ * Por eso el resultado aparece en su propio bloque y no dentro del mensaje.
  */
 (() => {
   const API = 'https://geekfinanciero-api.geekfinanciero.workers.dev';
@@ -23,75 +22,98 @@
     if (!r) return p(a, 'año', 'años');
     return `${p(a, 'año', 'años')} y ${p(r, 'mes', 'meses')}`;
   };
+  const sesion = () => { try { return localStorage.getItem('gf-sesion'); } catch { return null; } };
 
   const EJEMPLOS = [
-    'Debo 85 mil al 14 % a cinco años y en julio me entra la grati, unos 8 mil',
-    'Me quiero comprar un depa de 300 mil, doy 20 % de inicial y me dan 12.5 a 20 años',
-    'Tengo el auto en 60 mil a 16 % en 4 años y puedo poner 500 soles extra cada mes',
+    'Pago 900 al mes por mi moto y no sé la tasa',
+    'Debo 85 mil al 14 % a cinco años, y en julio me entra la grati',
+    'Me quiero comprar un depa de 300 mil, doy 20 % de inicial',
   ];
 
-  const texto = $('#texto'), enviar = $('#enviar'), salida = $('#salida');
+  const charla = $('#charla'), texto = $('#texto'), enviar = $('#enviar'), salida = $('#salida');
+  let historial = [], previo = {}, ocupado = false;
 
-  $('#ejemplos').innerHTML = EJEMPLOS.map((e, i) =>
-    `<button type="button" data-i="${i}">${esc(e.length > 52 ? e.slice(0, 52) + '…' : e)}</button>`).join('');
-  $('#ejemplos').addEventListener('click', ev => {
-    const b = ev.target.closest('button');
-    if (!b) return;
-    texto.value = EJEMPLOS[+b.dataset.i];
-    cuenta(); texto.focus(); calcular();
-  });
+  /* ---------- la conversación ---------- */
+  function pinta(rol, txt) {
+    const d = document.createElement('div');
+    d.className = 'msg ' + rol;
+    d.innerHTML = esc(txt);
+    charla.appendChild(d);
+    d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return d;
+  }
+  const pensando = () => {
+    const d = document.createElement('div');
+    d.className = 'escribiendo';
+    d.innerHTML = '<i></i><i></i><i></i>';
+    charla.appendChild(d);
+    d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return d;
+  };
 
-  const cuenta = () => { $('#cuenta').textContent = `${texto.value.length} / 600`; };
-  texto.addEventListener('input', cuenta);
-  texto.addEventListener('keydown', e => {
-    // Enter envía; Mayúsculas+Enter hace salto de línea, como en cualquier chat.
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); calcular(); }
-  });
-  enviar.addEventListener('click', calcular);
+  function fichas(c, deducida) {
+    const f = [];
+    if (c.entidad) f.push([c.entidad, false]);
+    if (c.precio > 0) {
+      f.push([`Precio ${soles(c.precio, 0)}`, false]);
+      if (c.inicialPct) f.push([`Inicial ${c.inicialPct} %`, false]);
+    } else if (c.monto > 0) f.push([`Te prestan ${soles(c.monto, 0)}`, false]);
+    if (c.tea > 0) f.push([`Tasa ${nf(c.tea, 2).replace(/,00$/, '')} %${deducida ? ' (deducida)' : ''}`, deducida]);
+    if (c.meses > 0) f.push([`Plazo ${meses2texto(c.meses)}`, false]);
+    if (c.cuota > 0) f.push([`Pagas ${soles(c.cuota)} al mes`, false]);
+    if (c.extra > 0) f.push([`A capital ${soles(c.extra, 0)} en el mes ${c.mes || 6}`, false]);
+    if (c.mensual > 0) f.push([`Extra ${soles(c.mensual, 0)} cada mes`, false]);
+    if (!f.length) return '';
+    return `<div class="fichas">${f.map(([t, d]) =>
+      `<span class="${d ? 'deducida' : ''}">${esc(t)}</span>`).join('')}</div>`;
+  }
 
-  const pensando = t => { salida.innerHTML = `<div class="pensando"><i></i>${esc(t)}</div>`; };
-  const fallo = t => { salida.innerHTML = `<div class="mal">${esc(t)}</div>`; };
-
-  async function calcular() {
-    const t = texto.value.trim();
-    if (t.length < 4) return fallo('Cuéntame un poco más: cuánto debes, a qué tasa y en cuántos meses.');
-    enviar.disabled = true;
-    pensando('Leyendo lo que escribiste…');
+  async function hablar(txt) {
+    if (ocupado) return;
+    ocupado = true; enviar.disabled = true;
+    historial.push({ rol: 'yo', texto: txt });
+    pinta('yo', txt);
+    texto.value = ''; cuenta();
+    const puntos = pensando();
 
     let d;
     try {
-      const r = await fetch(`${API}/api/entender`, {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ texto: t }),
+      const s = sesion();
+      const r = await fetch(`${API}/api/asesor`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...(s ? { authorization: 'Bearer ' + s } : {}) },
+        body: JSON.stringify({ mensajes: historial.slice(-12), previo }),
       });
       d = await r.json();
     } catch (e) {
-      enviar.disabled = false;
-      return fallo('No pudimos conectar. Revisa tu conexión e inténtalo otra vez.');
+      d = { error: 'No pudimos conectar. Revisa tu conexión e inténtalo otra vez.' };
     }
-    enviar.disabled = false;
-    if (!d || d.error) return fallo(d?.error || 'No te entendí. Prueba de otra forma.');
+    puntos.remove();
+    ocupado = false; enviar.disabled = false;
 
-    const c = d.campos;
-    if (d.faltan && d.faltan.length) {
-      salida.innerHTML = `
-        <div class="entendi">${c.resumen ? esc(c.resumen) + '<br><br>' : ''}
-          Para calcularlo me falta <b>${d.faltan.map(esc).join('</b>, <b>')}</b>.
-          Añádelo a tu frase y vuelve a darle.</div>`;
-      return;
-    }
+    if (!d || d.error) { pinta('mal', d?.error || 'Algo falló. Prueba otra vez.'); return; }
 
-    pensando('Calculando con el motor…');
-    const base = c.precio > 0
-      ? { principal: Math.max(0, c.precio - c.precio * (c.inicialPct || 0) / 100 - (c.bono || 0)) }
-      : { principal: c.monto };
-    Object.assign(base, {
-      tea: c.tea / 100, meses: c.meses, desg: 0.0052, portes: 0, seguroBien: 0,
+    historial.push({ rol: 'asesor', texto: d.respuesta });
+    previo = d.campos;
+    const msg = pinta('ia', d.respuesta);
+    const f = fichas(d.campos, d.teaDeducida);
+    if (f) msg.insertAdjacentHTML('beforeend', f);
+
+    if (d.listo) calcular(d.campos);
+    else salida.innerHTML = '';
+  }
+
+  /* ---------- el cálculo, que NO sale del modelo ---------- */
+  async function calcular(c) {
+    const principal = c.precio > 0
+      ? Math.max(0, c.precio - c.precio * (c.inicialPct || 0) / 100 - (c.bono || 0))
+      : c.monto;
+    const base = {
+      principal, tea: c.tea / 100, meses: c.meses, desg: 0.0052, portes: 0, seguroBien: 0,
       comision: 0, balon: 0, gracia: null, dobleCuota: false,
       inicio: { anio: new Date().getFullYear(), mes: new Date().getMonth() + 2 },
       puntuales: [], mensual: null, compra: null, modo: c.objetivo === 'cuota' ? 'cuota' : 'plazo',
-    });
-
+    };
     let s;
     try {
       const r = await fetch(`${API}/api/simular`, {
@@ -99,70 +121,79 @@
         body: JSON.stringify({ moneda: 'S/', base, plan: base }),
       });
       s = await r.json();
-    } catch (e) { return fallo('No pudimos calcular ahora mismo. Inténtalo otra vez.'); }
-    if (!s || !s.gratis) return fallo('No pudimos calcular ahora mismo. Inténtalo otra vez.');
+    } catch (e) { return; }
+    if (!s?.gratis) return;
 
-    pinta(c, s.gratis);
-  }
-
-  function pinta(c, g) {
-    const chip = (k, v) => v == null || v === 0 ? '' : `<span>${esc(k)}: ${esc(v)}</span>`;
+    const g = s.gratis, gap = g.tcea != null ? g.tcea - c.tea / 100 : NaN;
     const params = new URLSearchParams();
     if (c.precio > 0) {
       params.set('precio', c.precio);
       if (c.inicialPct) params.set('inicialPct', c.inicialPct);
       if (c.bono) params.set('bono', c.bono);
-    } else {
-      params.set('monto', c.monto);
-    }
-    params.set('tea', c.tea);
-    params.set('meses', c.meses);
+    } else params.set('monto', c.monto);
+    params.set('tea', c.tea); params.set('meses', c.meses);
     if (c.extra) { params.set('extra', c.extra); params.set('mes', c.mes || 6); }
     if (c.mensual) params.set('mensual', c.mensual);
     params.set('modo', c.objetivo === 'cuota' ? 'cuota' : 'plazo');
 
-    const puedeAdelantar = c.extra > 0 || c.mensual > 0;
-    const gap = g.tcea != null ? g.tcea - c.tea / 100 : NaN;
-
     salida.innerHTML = `
-      <div class="entendi">
-        <b>Esto es lo que entendí.</b> ${esc(c.resumen || '')}
-        <div class="campos">
-          ${chip(c.precio > 0 ? 'Precio del bien' : 'Te prestan', soles(c.precio > 0 ? c.precio : c.monto, 0))}
-          ${chip('Inicial', c.inicialPct ? c.inicialPct + ' %' : null)}
-          ${chip('Tasa anual', c.tea + ' %')}
-          ${chip('Plazo', meses2texto(c.meses))}
-          ${chip('A capital', c.extra ? `${soles(c.extra, 0)} en el mes ${c.mes || 6}` : null)}
-          ${chip('Cada mes', c.mensual ? soles(c.mensual, 0) : null)}
-        </div>
-      </div>
-
       <div class="cifras">
-        <div class="cifra alta"><span class="k">Tu cuota</span>
-          <span class="v">${soles(g.cuota)}</span></div>
-        <div class="cifra"><span class="k">Pagarás en total</span>
-          <span class="v">${soles(g.desembolso, 0)}</span></div>
-        <div class="cifra"><span class="k">De eso, intereses</span>
-          <span class="v">${soles(g.totalInteres, 0)}</span></div>
+        <div class="cifra alta"><span class="k">Tu cuota</span><span class="v">${soles(g.cuota)}</span></div>
+        <div class="cifra"><span class="k">Pagarás en total</span><span class="v">${soles(g.desembolso, 0)}</span></div>
+        <div class="cifra"><span class="k">De eso, intereses</span><span class="v">${soles(g.totalInteres, 0)}</span></div>
         <div class="cifra"><span class="k">Tu costo real (TCEA)</span>
           <span class="v">${g.tcea != null ? nf(g.tcea * 100, 2) + ' %' : '—'}</span></div>
       </div>
-
       ${isFinite(gap) && gap > 0.0005 ? `<p style="font-size:.92rem;color:var(--ink-2);margin:0 0 4px">
-        Tu costo real está <b>${nf(gap * 100, 2)} puntos por encima</b> de la tasa que te ofrecieron:
-        eso es el desgravamen y los gastos. Es la cifra con la que hay que comparar bancos.</p>` : ''}
-
+        Tu costo real va <b>${nf(gap * 100, 2)} puntos por encima</b> de la tasa: eso es el
+        desgravamen y los gastos. Es la cifra con la que se comparan bancos.</p>` : ''}
       <div class="siguiente">
-        <h2>${puedeAdelantar
-          ? 'Ahora la pregunta cara: cuánto te ahorras'
-          : '¿Y si pudieras pagar algo a capital?'}</h2>
-        <p>${puedeAdelantar
-          ? 'Ya sé lo que puedes poner. Lo que falta es el número: cuánto te ahorras en intereses, cuántos meses te quitas de encima y si te conviene bajar la cuota o terminar antes.'
-          : 'Aunque sea la gratificación de un año. Con eso el crédito se acorta y los intereses caen. El simulador te dice cuánto, con tus cifras.'}</p>
+        <h2>${(c.extra > 0 || c.mensual > 0)
+          ? 'Cuánto te ahorras con eso' : '¿Y si pudieras pagar algo a capital?'}</h2>
+        <p>${(c.extra > 0 || c.mensual > 0)
+          ? 'Ya sé lo que puedes poner. El número —cuánto te ahorras y cuántos meses te quitas— está en el simulador.'
+          : 'Aunque sea la gratificación de un año. El simulador te dice cuánto se acorta y cuánto dejas de pagar.'}</p>
         <a class="boton" href="/?${params.toString()}">Verlo en el simulador →</a>
         <a class="suave" href="/preguntas.html">O leer cómo funciona</a>
       </div>`;
   }
 
-  cuenta();
+  /* ---------- arranque ---------- */
+  const cuenta = () => { $('#cuenta').textContent = `${texto.value.length} / 700`; };
+  texto.addEventListener('input', cuenta);
+  texto.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const t = texto.value.trim(); if (t) hablar(t); }
+  });
+  enviar.addEventListener('click', () => { const t = texto.value.trim(); if (t) hablar(t); });
+
+  $('#ejemplos').innerHTML = EJEMPLOS.map((e, i) =>
+    `<button type="button" data-i="${i}">${esc(e.length > 52 ? e.slice(0, 52) + '…' : e)}</button>`).join('');
+  $('#ejemplos').addEventListener('click', ev => {
+    const b = ev.target.closest('button');
+    if (b) hablar(EJEMPLOS[+b.dataset.i]);
+  });
+
+  // Si ya entró con su cuenta, el asesor abre saludándola por su nombre.
+  (async () => {
+    cuenta();
+    const s = sesion();
+    if (!s) {
+      pinta('ia', 'Hola. Cuéntame de tu crédito con tus palabras — cuánto debes, a qué banco, '
+        + 'lo que sepas. Si no sabes la tasa no pasa nada: con cuánto pagas al mes la deduzco.');
+      return;
+    }
+    try {
+      const r = await fetch(`${API}/api/yo`, { headers: { authorization: 'Bearer ' + s } });
+      const yo = await r.json();
+      const nombre = yo?.correo ? yo.correo.split('@')[0].split(/[._-]/)[0] : null;
+      const n = nombre ? nombre.charAt(0).toUpperCase() + nombre.slice(1) : null;
+      if (n) $('#saludo').innerHTML = `Hola, ${esc(n)}.<br>Cuéntame en qué estás.`;
+      pinta('ia', n
+        ? `Hola ${n}. ¿Qué miramos hoy? Puedes contarme un crédito nuevo, o decirme algo como `
+          + '«hoy deposité tres mil» y te digo cómo queda.'
+        : 'Hola. Cuéntame de tu crédito con tus palabras.');
+    } catch (e) {
+      pinta('ia', 'Hola. Cuéntame de tu crédito con tus palabras.');
+    }
+  })();
 })();
