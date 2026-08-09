@@ -2272,6 +2272,22 @@ const LAMINAS = [
            <td>${nf(f[4])}</td><td>${nf(f[5])}</td><td>${nf(f[6])}</td><td>${nf(f[9])}</td></tr>`).join('')}
         </tbody></table></div>`;
     } },
+  { tit: 'El asesor con IA', sub: 'Le cuentas tu crédito hablando y te deduce la tasa.', pinta(z) {
+      // Se le habla como a una persona: esta es una conversacion de verdad,
+      // la de alguien que no sabia su tasa y solo sabia lo que pagaba al mes.
+      const charla = [
+        [1, 'pago 900 al mes por mi moto y no sé la tasa'],
+        [0, 'Con la cuota mensual puedo deducir la tasa. ¿Cuánto te prestaron?'],
+        [1, 'es del bcp, me prestaron 20 mil y me faltan 2 años'],
+        [0, 'Listo. Con eso deduje tu tasa: abajo tienes tu cuota, tus intereses y tu costo real.'],
+      ];
+      z.innerHTML = `<div style="display:flex;flex-direction:column;gap:9px;height:100%;justify-content:center">
+        ${charla.map(([mio, t]) => `<div style="max-width:86%;padding:10px 14px;border-radius:14px;
+          font-size:.9rem;line-height:1.5;${mio
+            ? 'align-self:flex-end;background:var(--brand);color:var(--on-brand);border-bottom-right-radius:4px'
+            : 'align-self:flex-start;background:var(--inset);border-bottom-left-radius:4px'}">${t}</div>`).join('')}
+      </div>`;
+    } },
   { tit: 'Comparar dos créditos', sub: 'Banco A contra Banco B, comparados por TCEA.', pinta(z) {
       const c = MUESTRA.comparador;
       z.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">
