@@ -39,6 +39,8 @@ flujos reales de caja, anualizada.
 
 - [Simulador](https://geekfinanciero.com/): calcula cuota, total a pagar,
   intereses y TCEA. Gratis y sin cuenta.
+- [Asistente](https://geekfinanciero.com/asistente.html): se le cuenta el crédito
+  en lenguaje normal y devuelve cuota, intereses y TCEA. Gratis y sin cuenta.
 - [12 preguntas sobre amortizar en Perú](https://geekfinanciero.com/preguntas.html):
   las respuestas completas a lo de arriba, con las reglas peruanas.
 - [Términos](https://geekfinanciero.com/terminos.html) ·

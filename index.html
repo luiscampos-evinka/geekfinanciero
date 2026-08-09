@@ -1087,6 +1087,7 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
     <span>Simulador de créditos · basado en la plantilla de Julio Campos</span>
     <span>Cuota por sistema francés · TCEA por TIR de los flujos reales</span>
     <span style="display:flex;gap:14px;flex-wrap:wrap">
+      <a href="https://geekfinanciero.com/asistente.html" style="color:inherit">Cuéntamelo con tus palabras</a>
       <a href="https://geekfinanciero.com/preguntas.html" style="color:inherit">Preguntas frecuentes</a>
       <a href="https://geekfinanciero.com/terminos.html" style="color:inherit">Términos y Condiciones</a>
       <a href="https://geekfinanciero.com/privacidad.html" style="color:inherit">Política de Privacidad</a>
@@ -1808,6 +1809,48 @@ function refrescarBarra() {
 }
 
 /** Cada tecla no puede ser una petición: se espera a que la mano pare. */
+/**
+ * Cuando alguien llega desde el asistente, la dirección trae sus datos y el
+ * formulario se rellena solo. Se limpia la barra de direcciones después para
+ * que no quede su crédito en el historial ni en un enlace compartido.
+ */
+function llegaDelAsistente() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has('monto') && !q.has('precio')) return;
+  const pon = (sel, v) => { const e = $(sel); if (e && v != null && isFinite(v)) e.value = v; };
+  const n = k => { const v = parseFloat(q.get(k)); return isFinite(v) ? v : null; };
+
+  if (q.has('precio')) {
+    const r = document.querySelector('input[name=entrada][value=bien]');
+    if (r) { r.checked = true; $('#grp-bien').hidden = false; $('#fld-monto').hidden = true; }
+    pon('#f-precio', n('precio'));
+    pon('#f-inicial-pct', n('inicialPct') ?? 20);
+    const pr = n('precio'), ip = n('inicialPct') ?? 20;
+    if (pr) pon('#f-inicial-mto', Math.round(pr * ip / 100));
+    pon('#f-bono', n('bono') ?? 0);
+  } else {
+    pon('#f-monto', n('monto'));
+  }
+  pon('#f-tea', n('tea'));
+  pon('#f-plazo', n('meses'));
+
+  if (n('extra')) {
+    amortizaciones.length = 0;
+    amortizaciones.push({ mes: Math.max(1, Math.round(n('mes') || 6)), monto: n('extra') });
+    $('#sw-puntual').checked = true;
+  } else if (n('mensual')) {
+    $('#sw-puntual').checked = false;
+  }
+  if (n('mensual')) {
+    $('#sw-mensual').checked = true;
+    pon('#f-mens-monto', n('mensual'));
+  }
+  const modo = document.querySelector(`input[name=modo][value="${q.get('modo') === 'cuota' ? 'cuota' : 'plazo'}"]`);
+  if (modo) modo.checked = true;
+
+  history.replaceState(null, '', location.pathname);
+}
+
 function conFreno(fn, ms = 320) {
   let t = null;
   return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
@@ -2512,6 +2555,7 @@ function conectarCuenta() {
 }
 
 restaurar();
+llegaDelAsistente();
 aplicarMoneda();
 pintarAmortizaciones();
 pintarFormsComparador();
