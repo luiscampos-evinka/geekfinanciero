@@ -1207,6 +1207,11 @@ function meses2texto(m) {
   return `${plural(a, 'año', 'años')} y ${plural(r, 'mes', 'meses')}`;
 }
 
+/** Nada de texto de personas dentro de innerHTML sin pasar por aquí. */
+const esc = t => String(t == null ? '' : t)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const val = (id, def = 0) => { const v = parseFloat($(id).value); return isFinite(v) ? v : def; };
@@ -2285,8 +2290,9 @@ async function listarCreditos() {
   const av = $('#muro-resultado');
   if (!ok || !cuerpo || !cuerpo.creditos) { av.innerHTML = `<div class="aviso-cuenta mal">No se pudo leer.</div>`; return; }
   if (!cuerpo.creditos.length) { av.innerHTML = `<div class="aviso-cuenta ok">Todavía no has guardado ninguno.</div>`; return; }
+  // El nombre lo escribió la persona: se escapa aunque solo se lo enseñemos a ella.
   av.innerHTML = `<div class="aviso-cuenta ok">${cuerpo.creditos.map(c =>
-    `<div><b>${c.nombre}</b> — ${money0((c.datos && c.datos.principal) || 0)} · guardado el ${fechaLarga(c.creado_en)}</div>`
+    `<div><b>${esc(c.nombre)}</b> — ${money0((c.datos && c.datos.principal) || 0)} · guardado el ${fechaLarga(c.creado_en)}</div>`
   ).join('')}</div>`;
 }
 
