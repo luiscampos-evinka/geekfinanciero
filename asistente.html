@@ -58,6 +58,12 @@
   .escribiendo i:nth-child(2){animation-delay:.15s}
   .escribiendo i:nth-child(3){animation-delay:.3s}
   @keyframes bota{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+  .anotar{margin-top:12px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+  .anotar button{font:inherit;font-weight:650;font-size:.88rem;padding:9px 16px;border:none;
+    border-radius:10px;background:var(--brand);color:#fff;cursor:pointer}
+  .anotar button:disabled{opacity:.55;cursor:default}
+  .anotar .pista{font-size:.79rem;color:var(--ink-3);line-height:1.4}
+  .anotado{font-size:.88rem;font-weight:650;color:var(--brand)}
   .fichas{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
   .fichas span{font-size:.78rem;background:var(--surface);border:1px solid var(--rule);
     border-radius:999px;padding:3px 10px;font-variant-numeric:tabular-nums}

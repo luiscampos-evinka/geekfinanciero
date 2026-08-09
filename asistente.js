@@ -99,9 +99,48 @@
     const f = fichas(d.campos, d.teaDeducida);
     if (f) msg.insertAdjacentHTML('beforeend', f);
 
+    // Si dice que ya depositó, se le ofrece anotarlo. Se ofrece: lo confirma ella.
+    if (d.registrar) msg.insertAdjacentHTML('beforeend', botonAnotar(d.registrar));
+
     if (d.listo) calcular(d.campos);
     else salida.innerHTML = '';
   }
+
+  /* ---------- anotar un pago ya hecho ---------- */
+  function botonAnotar(r) {
+    return `<div class="anotar" data-credito="${r.creditoId}" data-monto="${r.monto}">
+      <button type="button" class="anota">Anotarlo en «${esc(r.nombre)}»</button>
+      <span class="pista">Queda en tu historial y lo tendré en cuenta la próxima vez.</span>
+    </div>`;
+  }
+
+  charla.addEventListener('click', async ev => {
+    const b = ev.target.closest('button.anota');
+    if (!b) return;
+    const caja = b.closest('.anotar');
+    b.disabled = true; b.textContent = 'Anotando…';
+    const s = sesion();
+    try {
+      const r = await fetch(`${API}/api/aportes`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...(s ? { authorization: 'Bearer ' + s } : {}) },
+        body: JSON.stringify({ creditoId: +caja.dataset.credito, monto: +caja.dataset.monto,
+                               mes: 1, nota: 'Anotado desde el asesor' }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) {
+        b.disabled = false; b.textContent = 'Anotarlo';
+        caja.querySelector('.pista').textContent = d?.error === 'pago_requerido'
+          ? 'El historial va con la suscripción.' : (d?.error || 'No se pudo anotar.');
+        return;
+      }
+      caja.innerHTML = `<span class="anotado">Anotado. Llevas ${soles(d.total, 0)} a capital en
+        «${esc(d.credito)}» — ${d.aportes.length} ${d.aportes.length === 1 ? 'vez' : 'veces'}.</span>`;
+    } catch (e) {
+      b.disabled = false; b.textContent = 'Anotarlo';
+      caja.querySelector('.pista').textContent = 'No pudimos conectar.';
+    }
+  });
 
   /* ---------- el cálculo, que NO sale del modelo ---------- */
   async function calcular(c) {
