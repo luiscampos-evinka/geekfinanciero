@@ -474,6 +474,17 @@ input[type=month]:focus,select:focus{outline:none;border-color:var(--brand);
 .atajo-ia .flecha{margin-left:auto;color:var(--brand);font-weight:700;font-size:1.15rem}
 @media (max-width:520px){ .atajo-ia .flecha{display:none} .atajo-ia{padding:13px 15px;gap:11px} }
 
+/* ---------- los créditos guardados ---------- */
+.guardados{display:flex;flex-direction:column;gap:10px}
+.guardado{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;
+  text-align:left;padding:14px 16px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--surface);cursor:pointer;transition:border-color .18s}
+.guardado:hover{border-color:var(--brand)}
+.guardado .n{font-weight:650;font-size:1rem;color:var(--ink)}
+.guardado .d{font-size:.85rem;color:var(--ink-2)}
+.guardado .ap{font-size:.82rem;color:var(--brand);font-weight:600}
+.guardado .ir{font-size:.85rem;color:var(--brand);font-weight:650;margin-top:4px}
+
 /* ---------- cuando el servidor no contesta ---------- */
 body.sin-red .resumen{background:var(--warn-soft)}
 body.sin-red .cifras .v{opacity:.45}
@@ -2435,6 +2446,10 @@ function pintarMuro() {
     sw.addEventListener('change', sync); sync();
   }
     $('#muro-listar').addEventListener('click', listarCreditos);
+  $('#zona-guardar').addEventListener('click', ev => {
+    const b = ev.target.closest('button.guardado');
+    if (b) cargarGuardado(+b.dataset.i);
+  });
     $('#muro-equipos').addEventListener('click', misEquipos);
     $('#muro-2fa').addEventListener('click', cambiarDosFactores);
     return;
@@ -2553,15 +2568,69 @@ async function guardarCredito() {
   else av.innerHTML = `<div class="aviso-cuenta mal">${(cuerpo && cuerpo.error) || 'No se pudo guardar.'}</div>`;
 }
 
+let guardados = [];
+
 async function listarCreditos() {
   const { ok, cuerpo } = await api('/api/creditos');
   const av = $('#muro-resultado');
   if (!ok || !cuerpo || !cuerpo.creditos) { av.innerHTML = `<div class="aviso-cuenta mal">No se pudo leer.</div>`; return; }
   if (!cuerpo.creditos.length) { av.innerHTML = `<div class="aviso-cuenta ok">Todavía no has guardado ninguno.</div>`; return; }
+  guardados = cuerpo.creditos;
   // El nombre lo escribió la persona: se escapa aunque solo se lo enseñemos a ella.
-  av.innerHTML = `<div class="aviso-cuenta ok">${cuerpo.creditos.map(c =>
-    `<div><b>${esc(c.nombre)}</b> — ${money0((c.datos && c.datos.principal) || 0)} · guardado el ${fechaLarga(c.creado_en)}</div>`
-  ).join('')}</div>`;
+  av.innerHTML = `<div class="guardados">${cuerpo.creditos.map((c, i) => {
+    const ap = c.aportes || [];
+    const total = ap.reduce((t, x) => t + x.monto, 0);
+    return `<button type="button" class="guardado" data-i="${i}">
+      <span class="n">${esc(c.nombre)}</span>
+      <span class="d">${money0((c.datos && c.datos.principal) || 0)} · guardado el ${fechaLarga(c.creado_en)}</span>
+      ${ap.length ? `<span class="ap">Ya llevas ${money0(total)} a capital en ${ap.length}
+        ${ap.length === 1 ? 'aporte' : 'aportes'} — se cargan también</span>` : ''}
+      <span class="ir">Cargarlo →</span>
+    </button>`;
+  }).join('')}</div>`;
+}
+
+/**
+ * Carga un crédito guardado en el formulario CON sus aportes ya hechos.
+ * Sin esto la memoria servía para que el asesor lo mencionara, pero el
+ * cronograma seguía partiendo del crédito original, como si no hubieras pagado
+ * nada — que es justo lo contrario de llevar un historial.
+ */
+function cargarGuardado(i) {
+  const c = guardados[i];
+  if (!c || !c.datos) return;
+  const d = c.datos;
+  const pon = (sel, v) => { const e = $(sel); if (e && v != null && isFinite(v)) e.value = v; };
+
+  const r = document.querySelector('input[name=entrada][value=monto]');
+  if (r) { r.checked = true; $('#grp-bien').hidden = true; $('#fld-monto').hidden = false; }
+  pon('#f-monto', d.principal);
+  pon('#f-tea', (d.tea || 0) * 100);
+  pon('#f-plazo', d.meses);
+  pon('#f-desg', (d.desg || 0) * 100);
+  pon('#f-portes', d.portes); pon('#f-seguro', d.seguroBien); pon('#f-comision', d.comision);
+  pon('#f-balon', d.balon);
+  if ($('#f-doble')) $('#f-doble').checked = !!d.dobleCuota;
+  if (d.inicio && $('#f-inicio')) $('#f-inicio').value =
+    `${d.inicio.anio}-${String(d.inicio.mes).padStart(2, '0')}`;
+  const modo = document.querySelector(`input[name=modo][value="${d.modo === 'cuota' ? 'cuota' : 'plazo'}"]`);
+  if (modo) modo.checked = true;
+
+  // los aportes ya hechos entran como amortizaciones puntuales
+  const ap = (c.aportes || []).filter(x => x.monto > 0);
+  amortizaciones.length = 0;
+  if (ap.length) {
+    ap.forEach(x => amortizaciones.push({ mes: Math.max(1, x.mes || 1), monto: x.monto }));
+    $('#sw-puntual').checked = true;
+  } else {
+    amortizaciones.push({ mes: 6, monto: 0 });
+  }
+  pintarAmortizaciones();
+  recalcular();
+  restauraActa();
+  $('#muro-resultado').innerHTML = `<div class="aviso-cuenta ok">Cargado <b>${esc(c.nombre)}</b>${
+    ap.length ? ` con sus ${ap.length} ${ap.length === 1 ? 'aporte' : 'aportes'} ya hechos` : ''}.</div>`;
+  $('#hero').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 /* --- el diálogo, que es una pequeña máquina de estados --- */
