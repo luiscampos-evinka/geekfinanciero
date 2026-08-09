@@ -397,6 +397,32 @@ input[type=month]:focus,select:focus{outline:none;border-color:var(--brand);
 .pro .demo .frase{font-size:1.02rem;line-height:1.62;margin:0}
 .pro .demo .frase b{font-family:var(--ff-num);font-variant-numeric:tabular-nums}
 .pro .demo .pie{margin:10px 0 0;font-size:.87rem;color:var(--ink-2)}
+.pro .oferta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;
+  background:var(--ink);color:var(--bg);border-radius:12px;padding:13px 18px;font-size:.93rem}
+.pro .oferta .tag{font-size:.7rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  background:var(--brand);color:var(--on-brand);border-radius:999px;padding:4px 11px}
+.pro .oferta .quedan{margin-left:auto;font-size:.85rem;
+  color:color-mix(in srgb, var(--bg) 70%, transparent)}
+@media (max-width:560px){ .pro .oferta .quedan{margin-left:0} }
+
+.pro .visor{margin-top:20px}
+.pro .visor .marco{position:relative;border:1px solid var(--rule);border-radius:14px;
+  overflow:hidden;background:var(--surface);height:260px}
+.pro .visor .lienzo{position:absolute;inset:0;padding:18px;filter:blur(3.4px);
+  opacity:.92;pointer-events:none;user-select:none;overflow:hidden}
+.pro .visor .candado{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:7px;text-align:center;padding:20px;
+  background:color-mix(in srgb, var(--surface) 48%, transparent);color:var(--ink);
+  text-shadow:0 1px 10px var(--surface)}
+.pro .visor .candado b{font-size:1.06rem}
+.pro .visor .candado span{font-size:.87rem;color:var(--ink-2);max-width:30ch;line-height:1.45}
+.pro .puntos{display:flex;gap:7px;justify-content:center;margin-top:13px;flex-wrap:wrap}
+.pro .puntos button{width:9px;height:9px;padding:0;border-radius:999px;border:none;
+  background:var(--rule-2);cursor:pointer;transition:background .2s,width .2s}
+.pro .puntos button[aria-selected=true]{background:var(--brand);width:26px}
+@media (max-width:430px){ .pro .visor .marco{height:230px} }
+@media (prefers-reduced-motion:reduce){ .pro .puntos button{transition:none} }
+
 .pro .rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:12px}
 .pro .it{display:flex;flex-direction:column;gap:9px;padding:14px;border:1px solid var(--rule);
   border-radius:12px;background:var(--surface)}
@@ -407,6 +433,7 @@ input[type=month]:focus,select:focus{outline:none;border-color:var(--brand);
 .pro .precio{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .pro .precio .n{font-family:var(--ff-num);font-weight:700;font-size:1.7rem;letter-spacing:-.02em}
 .pro .precio .mes{color:var(--ink-2);font-size:.95rem}
+.pro .precio .tachado{color:var(--ink-3);text-decoration:line-through;font-family:var(--ff-num);font-size:1.05rem}
 .pro .cierre button{background:var(--brand);border-color:var(--brand);color:var(--on-brand);
   font-size:.98rem;padding:12px 22px}
 .pro .card-note{margin-top:12px;font-size:.85rem;color:var(--ink-3)}
@@ -741,10 +768,24 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
         mes conviene hacerlo.</p>
       </div></header>
       <div class="body">
+        <div class="oferta" id="pro-oferta" hidden></div>
         <div class="demo" id="pro-demo"></div>
-        <div class="rejilla" id="pro-lista"></div>
+        <div class="visor" id="pro-visor">
+          <div class="marco">
+            <div class="lienzo" id="pro-lienzo"></div>
+            <div class="candado">
+              <svg viewBox="0 0 24 24" aria-hidden="true" width="26" height="26">
+                <path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <rect x="4" y="10" width="16" height="11" rx="2.5" fill="currentColor"/>
+              </svg>
+              <b id="pro-visor-tit"></b>
+              <span id="pro-visor-sub"></span>
+            </div>
+          </div>
+          <div class="puntos" id="pro-puntos" role="tablist" aria-label="Lo que se abre al suscribirte"></div>
+        </div>
         <div class="cierre">
-          <div class="precio"><span class="n">S/ 20</span><span class="mes">al mes</span></div>
+          <div class="precio" id="pro-precio"><span class="n">S/ 20</span><span class="mes">al mes</span></div>
           <button type="button" id="pro-cta">Quiero verlo con mis números</button>
         </div>
         <p class="card-note">Se cancela cuando quieras, sin permanencia ni cobro automático.
@@ -2297,36 +2338,135 @@ const EJEMPLO = {
   inicio: { anio: 2026, mes: 9 }, puntuales: [], mensual: null, compra: null, modo: 'plazo',
 };
 
-const FICHAS = [
-  ['Cuánto te ahorras', 'En soles y en meses, con tus propias cifras.',
-   '<path d="M4 34 C22 34 30 12 56 12" fill="none" stroke="var(--serie-b)" stroke-width="3" stroke-linecap="round"/><circle cx="56" cy="12" r="4" fill="var(--serie-b)"/>'],
-  ['Cómo baja tu deuda', 'Mes a mes, contra cómo ibas sin amortizar.',
-   '<path d="M4 8 L56 36" stroke="var(--rule-2)" stroke-width="2.5" stroke-dasharray="4 3" fill="none"/><path d="M4 8 C20 20 30 34 40 36" stroke="var(--serie-b)" stroke-width="3" fill="none" stroke-linecap="round"/>'],
-  ['A dónde se va tu plata', 'Cuánto es deuda y cuánto se lleva el banco.',
-   '<rect x="6" y="20" width="13" height="18" rx="2" fill="var(--serie-a)"/><rect x="6" y="8" width="13" height="12" rx="2" fill="var(--serie-b)"/><rect x="26" y="24" width="13" height="14" rx="2" fill="var(--serie-a)"/><rect x="26" y="14" width="13" height="10" rx="2" fill="var(--serie-b)"/><rect x="46" y="28" width="13" height="10" rx="2" fill="var(--serie-a)"/><rect x="46" y="20" width="13" height="8" rx="2" fill="var(--serie-b)"/>'],
-  ['Qué te dicen los números', 'Leído en criollo, sobre tu simulación.',
-   '<circle cx="11" cy="11" r="4" fill="var(--serie-b)"/><rect x="21" y="9" width="38" height="4" rx="2" fill="var(--rule-2)"/><circle cx="11" cy="23" r="4" fill="var(--serie-b)"/><rect x="21" y="21" width="30" height="4" rx="2" fill="var(--rule-2)"/><circle cx="11" cy="35" r="4" fill="var(--serie-b)"/><rect x="21" y="33" width="34" height="4" rx="2" fill="var(--rule-2)"/>'],
-  ['El cronograma mes a mes', 'La tabla completa, cuota por cuota.',
-   '<rect x="4" y="6" width="56" height="34" rx="3" fill="none" stroke="var(--rule-2)" stroke-width="2"/><path d="M4 16 H60 M4 25 H60 M4 34 H60 M23 6 V40 M42 6 V40" stroke="var(--rule-2)" stroke-width="1.5"/><rect x="4" y="6" width="56" height="10" fill="var(--serie-b)" opacity=".28"/>'],
-  ['Descargarlo en Excel', 'Para llevárselo al banco o guardarlo.',
-   '<rect x="14" y="4" width="36" height="26" rx="3" fill="none" stroke="var(--rule-2)" stroke-width="2"/><path d="M32 12 V30 M25 24 l7 7 7 -7" stroke="var(--serie-b)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 40 H52" stroke="var(--rule-2)" stroke-width="3" stroke-linecap="round"/>'],
-  ['Comparar dos créditos', 'Banco A contra Banco B, por TCEA.',
-   '<rect x="2" y="10" width="21" height="28" rx="3" fill="var(--serie-a)" opacity=".55"/><rect x="41" y="4" width="21" height="34" rx="3" fill="var(--serie-b)"/><text x="32" y="26" font-size="10" font-weight="700" fill="var(--ink-3)" text-anchor="middle" font-family="var(--ff-ui)">vs</text>'],
+/* Las láminas del visor salen del EJEMPLO, nunca de las cifras de quien mira:
+   así se puede enseñar el producto de verdad sin regalar el cálculo propio.
+   Van borrosas porque el borroso dice «hay algo aquí» mucho mejor que un hueco. */
+let PLAN_EJ = null, BASE_EJ = null;
+const cfgEjemplo = () => ({
+  base: EJEMPLO,
+  plan: Object.assign({}, EJEMPLO, { puntuales: [{ mes: 6, monto: 20000 }, { mes: 12, monto: 20000 }] }),
+});
+
+const LAMINAS = [
+  { tit: 'Cuánto te ahorras', sub: 'En soles y en meses, con tus propias cifras.', pinta(z) {
+      const ah = BASE_EJ.totalInteres - PLAN_EJ.totalInteres;
+      z.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px;height:100%">
+        <span style="font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)">Te ahorras en intereses</span>
+        <div style="font-family:var(--ff-num);font-weight:700;font-size:clamp(2rem,7vw,3.2rem);line-height:1;color:var(--serie-b)">${money0(ah)}</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:.92rem">
+          <div style="display:flex;gap:10px"><span style="color:var(--ink-2)">Cuánto dura</span>
+            <b style="margin-left:auto;font-family:var(--ff-num)">${meses2texto(BASE_EJ.meses)} → ${meses2texto(PLAN_EJ.meses)}</b></div>
+          <div style="display:flex;gap:10px"><span style="color:var(--ink-2)">Intereses</span>
+            <b style="margin-left:auto;font-family:var(--ff-num)">${money0(BASE_EJ.totalInteres)} → ${money0(PLAN_EJ.totalInteres)}</b></div>
+          <div style="display:flex;gap:10px"><span style="color:var(--ink-2)">Sale de tu bolsillo</span>
+            <b style="margin-left:auto;font-family:var(--ff-num)">${money0(BASE_EJ.desembolso)} → ${money0(PLAN_EJ.desembolso)}</b></div>
+        </div></div>`;
+    } },
+  { tit: 'Cómo baja tu deuda', sub: 'Mes a mes, contra cómo ibas sin amortizar.', pinta(z) {
+      z.innerHTML = '<div class="chartbox" style="height:100%"><div class="tip"></div></div>';
+      lineChart(z.firstChild, [
+        { nombre: 'Como ibas', color: css('--serie-a'), etiqueta: 'Como ibas', datos: serieSaldo(BASE_EJ) },
+        { nombre: 'Amortizando', color: css('--serie-b'), etiqueta: 'Amortizando', datos: serieSaldo(PLAN_EJ), relleno: true },
+      ]);
+    } },
+  { tit: 'A dónde se va tu plata', sub: 'Cuánto es deuda y cuánto se lleva el banco.', pinta(z) {
+      z.innerHTML = '<div class="chartbox" style="height:100%"></div>';
+      stackedBars(z.firstChild, [
+        { nombre: 'Como ibas', capital: EJEMPLO.principal, interes: BASE_EJ.totalInteres,
+          color: css('--serie-a'), suave: css('--serie-a-soft') },
+        { nombre: 'Amortizando', capital: EJEMPLO.principal, interes: PLAN_EJ.totalInteres,
+          color: css('--serie-b'), suave: css('--serie-b-soft') },
+      ]);
+    } },
+  { tit: 'Qué te dicen tus números', sub: 'Leído en criollo, sobre tu propia simulación.', pinta(z) {
+      pintarInsights(z, insights(BASE_EJ, PLAN_EJ, cfgEjemplo()).slice(0, 3));
+    } },
+  { tit: 'El cronograma mes a mes', sub: 'La tabla completa, cuota por cuota, y en Excel.', pinta(z) {
+      z.innerHTML = `<div class="tablewrap" style="max-height:none"><table><thead><tr>
+        <th style="text-align:left">Mes</th><th>Cuota</th><th>Interés</th><th>Capital</th><th>Te queda debiendo</th>
+        </tr></thead><tbody>${PLAN_EJ.rows.slice(0, 7).map(r =>
+          `<tr><td style="text-align:left">${r.mes} <span style="color:var(--ink-3)">${mesCorto(r.fecha)}</span></td>
+           <td>${nf(r.cuota)}</td><td>${nf(r.interes)}</td><td>${nf(r.amort)}</td><td>${nf(r.saldoFin)}</td></tr>`).join('')}
+        </tbody></table></div>`;
+    } },
+  { tit: 'Comparar dos créditos', sub: 'Banco A contra Banco B, comparados por TCEA.', pinta(z) {
+      const [A, B] = OPCIONES.map(o => cronograma(cfgDeOpcion(o)));
+      const ganaB = B.desembolso < A.desembolso, g = ganaB ? B : A, mal = ganaB ? A : B;
+      z.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">
+        <span style="font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)">Cuál conviene</span>
+        <p style="font-size:1.02rem;line-height:1.55;margin:0">Gana el
+          <b>Banco ${ganaB ? 'B' : 'A'}</b>: te cuesta <b style="font-family:var(--ff-num)">${money0(mal.desembolso - g.desembolso)}</b> menos en total,
+          aunque su cuota sea de <b style="font-family:var(--ff-num)">${money0(ganaB ? B.cuotaInicial : A.cuotaInicial)}</b>.</p>
+        <div style="display:flex;gap:14px;font-size:.9rem">
+          <div style="flex:1"><span style="color:var(--ink-2)">Banco A · TCEA</span>
+            <div style="font-family:var(--ff-num);font-weight:700;font-size:1.2rem">${pct(A.tcea)}</div></div>
+          <div style="flex:1"><span style="color:var(--ink-2)">Banco B · TCEA</span>
+            <div style="font-family:var(--ff-num);font-weight:700;font-size:1.2rem">${pct(B.tcea)}</div></div>
+        </div></div>`;
+    } },
 ];
 
+let laminaActual = 0, relojVisor = null;
+
+function muestraLamina(i) {
+  const z = $('#pro-lienzo');
+  if (!z || !LAMINAS[i]) return;
+  laminaActual = i;
+  try { LAMINAS[i].pinta(z); } catch (e) { z.innerHTML = ''; }
+  $('#pro-visor-tit').textContent = LAMINAS[i].tit;
+  $('#pro-visor-sub').textContent = LAMINAS[i].sub;
+  $$('#pro-puntos button').forEach((b, k) => b.setAttribute('aria-selected', k === i ? 'true' : 'false'));
+}
+
+function arrancaVisor() {
+  const puntos = $('#pro-puntos');
+  if (!puntos || puntos.dataset.listo) return;
+
+  const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const anda = () => { if (!quieto && !relojVisor) relojVisor = setInterval(() => muestraLamina((laminaActual + 1) % LAMINAS.length), 4500); };
+  const para = () => { clearInterval(relojVisor); relojVisor = null; };
+
+  puntos.innerHTML = LAMINAS.map((l, i) =>
+    `<button type="button" role="tab" aria-selected="${i === 0}" aria-label="${l.tit}"></button>`).join('');
+  // Si alguien elige una lámina a mano, el carrusel deja de moverse solo.
+  $$('#pro-puntos button').forEach((b, i) => b.addEventListener('click', () => { para(); muestraLamina(i); }));
+  puntos.dataset.listo = '1';
+
+  const visor = $('#pro-visor');
+  visor.addEventListener('mouseenter', para);
+  visor.addEventListener('mouseleave', anda);
+  // Si la pestaña no está a la vista, no tiene sentido seguir girando.
+  document.addEventListener('visibilitychange', () => document.hidden ? para() : anda());
+  muestraLamina(0); anda();
+}
+
+/** El precio de la vitrina lo dice el servidor, para no anunciar un descuento
+    que después no se aplique. Si algo falla, se queda en el precio de lista. */
+async function pintarOferta() {
+  const caja = $('#pro-oferta'), pre = $('#pro-precio');
+  if (!caja) return;
+  try {
+    const r = await fetch(`${API}/api/precio?cupon=LANZAMIENTO`);
+    const d = await r.json();
+    if (!d.cupon || !(d.precioFinal < d.precio)) return;
+    const dias = d.cupon.venceEn ? Math.ceil((d.cupon.venceEn - Date.now() / 1000) / 86400) : 0;
+    caja.innerHTML = `<span class="tag">Lanzamiento</span>
+      <span>Este mes la suscripción cuesta <b>S/ ${nf(d.precioFinal, 0)}</b> en vez de S/ ${nf(d.precio, 0)}.</span>
+      ${dias > 0 ? `<span class="quedan">${dias === 1 ? 'Último día' : `Quedan ${dias} días`}</span>` : ''}`;
+    caja.hidden = false;
+    if (pre) pre.innerHTML = `<span class="tachado">S/ ${nf(d.precio, 0)}</span>
+      <span class="n">S/ ${nf(d.precioFinal, 0)}</span><span class="mes">al mes</span>`;
+  } catch (e) { /* sin conexión: se queda el precio de lista, sin prometer nada */ }
+}
+
 function pintarVitrina() {
-  const lista = $('#pro-lista');
-  if (lista && !lista.dataset.listo) {
-    lista.innerHTML = FICHAS.map(([t, d, svg]) =>
-      `<div class="it"><svg viewBox="0 0 64 44" aria-hidden="true">${svg}</svg><b>${t}</b><span>${d}</span></div>`).join('');
-    lista.dataset.listo = '1';
-  }
+  if (!BASE_EJ) { const c = cfgEjemplo(); BASE_EJ = cronograma(c.base); PLAN_EJ = cronograma(c.plan); }
+  arrancaVisor();
+  pintarOferta();
 
   const demo = $('#pro-demo');
   if (demo && !demo.dataset.listo) {
-    const base = cronograma(EJEMPLO);
-    const plan = cronograma(Object.assign({}, EJEMPLO,
-      { puntuales: [{ mes: 6, monto: 20000 }, { mes: 12, monto: 20000 }] }));
+    const base = BASE_EJ, plan = PLAN_EJ;
     const ahorro = base.totalInteres - plan.totalInteres;
     demo.innerHTML = `<span class="eyebrow">Un ejemplo, calculado ahora mismo</span>
       <p class="frase">Un crédito de <b>${money0(EJEMPLO.principal)}</b> a <b>12 %</b> anual en
