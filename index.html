@@ -2880,10 +2880,11 @@ conectarCuenta();
 window.__sim = { cronograma, pmt, tem, tir, cuotaVigenteDe };
 // Puerta para las pruebas: solo se abre con el archivo local. En el sitio
 // publicado —que va por https— no existe, así que no sirve para saltarse nada.
-if (location.protocol === 'file:') {
-  Object.assign(window.__sim, { $, $$, aplicarPremium,
+if (location.protocol === 'file:' || location.hostname === 'localhost') {
+  Object.assign(window.__sim, { $, $$, aplicarPremium, oferta: () => OFERTA,
     simularPagado: v => {
-      yo = v ? { correo: 'prueba@local', activo: true, venceEn: 2000000000, precio: 20, dosFactores: false } : null;
+      yo = v === null || v === false ? null
+        : { correo: 'prueba@local', activo: v !== 'impago', venceEn: 2000000000, precio: 20, dosFactores: false };
       pintarMuro(); aplicarPremium();
     } });
 }
