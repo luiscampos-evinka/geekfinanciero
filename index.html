@@ -2275,15 +2275,23 @@ const LAMINAS = [
   { tit: 'El asesor con IA', sub: 'Le cuentas tu crédito hablando y te deduce la tasa.', pinta(z) {
       // Se le habla como a una persona: esta es una conversacion de verdad,
       // la de alguien que no sabia su tasa y solo sabia lo que pagaba al mes.
-      const charla = [
+      // En el movil el marco es bajito: alli caben tres burbujas cortas, no cuatro
+      // largas. Con mas, la conversacion se sale del marco y se ve rota.
+      const angosto = innerWidth < 560;
+      const charla = angosto ? [
+        [1, 'pago 900 al mes y no sé mi tasa'],
+        [0, '¿Cuánto te prestaron? Con eso la deduzco.'],
+        [1, 'es del bcp, 20 mil a 2 años'],
+      ] : [
         [1, 'pago 900 al mes por mi moto y no sé la tasa'],
         [0, 'Con la cuota mensual puedo deducir la tasa. ¿Cuánto te prestaron?'],
         [1, 'es del bcp, me prestaron 20 mil y me faltan 2 años'],
-        [0, 'Listo. Con eso deduje tu tasa: abajo tienes tu cuota, tus intereses y tu costo real.'],
+        [0, 'Listo. Con eso deduje tu tasa: abajo tienes tu cuota y tu costo real.'],
       ];
-      z.innerHTML = `<div style="display:flex;flex-direction:column;gap:9px;height:100%;justify-content:center">
-        ${charla.map(([mio, t]) => `<div style="max-width:86%;padding:10px 14px;border-radius:14px;
-          font-size:.9rem;line-height:1.5;${mio
+      z.innerHTML = `<div style="display:flex;flex-direction:column;gap:9px;height:100%;
+        justify-content:center;overflow:hidden">
+        ${charla.map(([mio, t]) => `<div style="max-width:86%;padding:9px 13px;border-radius:14px;
+          font-size:${angosto ? '.84rem' : '.9rem'};line-height:1.45;${mio
             ? 'align-self:flex-end;background:var(--brand);color:var(--on-brand);border-bottom-right-radius:4px'
             : 'align-self:flex-start;background:var(--inset);border-bottom-left-radius:4px'}">${t}</div>`).join('')}
       </div>`;
