@@ -2266,7 +2266,11 @@ const API = 'https://geekfinanciero-api.geekfinanciero.workers.dev';
 const CLAVE_SESION = 'gf-sesion';
 
 let yo = null;          // {correo, activo, venceEn, precio} o null
-let cuponPuesto = null; // el último cupón validado
+let cuponPuesto = null; // el último cupón que alguien escribió a mano
+let OFERTA = null;      // la promoción viva, tal como la da el servidor
+// Si la vitrina anuncia S/ 10, la caja tiene que cobrar S/ 10 sin que nadie
+// escriba nada: el cupón de lanzamiento se aplica solo mientras esté vigente.
+const cuponVigente = () => cuponPuesto || OFERTA;
 
 const sesion = {
   get() { try { return localStorage.getItem(CLAVE_SESION); } catch { return null; } },
@@ -2449,6 +2453,8 @@ async function pintarOferta() {
     const r = await fetch(`${API}/api/precio?cupon=LANZAMIENTO`);
     const d = await r.json();
     if (!d.cupon || !(d.precioFinal < d.precio)) return;
+    OFERTA = d;
+    if (yo && !yo.activo) pintarMuro();   // la caja tiene que reflejar el precio de la promo
     const dias = d.cupon.venceEn ? Math.ceil((d.cupon.venceEn - Date.now() / 1000) / 86400) : 0;
     caja.innerHTML = `<span class="tag">Lanzamiento</span>
       <span>Este mes la suscripción cuesta <b>S/ ${nf(d.precioFinal, 0)}</b> en vez de S/ ${nf(d.precio, 0)}.</span>
@@ -2552,7 +2558,7 @@ function pintarMuro() {
   // --- con cuenta pero sin pagar: la caja
   $('#caja-titulo').textContent = 'Activa tu suscripción';
   $('#caja-lede').textContent = 'Con esto se abre todo lo de arriba, con tus propias cifras.';
-  const p = cuponPuesto || { precio: yo.precio, precioFinal: yo.precio, cupon: null };
+  const p = cuponVigente() || { precio: yo.precio, precioFinal: yo.precio, cupon: null };
   const conDescuento = p.precioFinal < p.precio;
   z.innerHTML = `
     <div class="muro">
@@ -2593,7 +2599,7 @@ async function irAPagar() {
   boton.disabled = true; boton.textContent = 'Preparando el pago…';
   const { ok, cuerpo } = await api('/api/pago/crear', {
     method: 'POST',
-    body: JSON.stringify({ cupon: cuponPuesto && cuponPuesto.cupon ? cuponPuesto.cupon.codigo : null }),
+    body: JSON.stringify({ cupon: (c => c && c.cupon ? c.cupon.codigo : null)(cuponVigente()) }),
   });
   if (ok && cuerpo && cuerpo.ir) { location.href = cuerpo.ir; return; }
   boton.disabled = false; boton.textContent = 'Suscribirme';
