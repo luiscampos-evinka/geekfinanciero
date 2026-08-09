@@ -1039,6 +1039,51 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
     </details>
   </div>
 
+    <section class="tarjeta premium" hidden>
+      <header><div class="t"><h2>El acta para tu banco</h2>
+        <p class="lede">La carta que pide el <b>pago anticipado a capital</b> con las palabras
+        exactas, y deja por escrito si quieres reducir el plazo o la cuota. Llévala impresa en dos
+        copias y pide que te sellen la tuya.</p></div></header>
+      <div class="body">
+        <div class="grid c2">
+          <div class="field">
+            <label for="a-nombre">Tu nombre completo</label>
+            <div class="inputwrap"><input type="text" id="a-nombre" maxlength="120" autocomplete="name"></div>
+          </div>
+          <div class="field">
+            <label for="a-doc">Tu DNI o carné</label>
+            <div class="inputwrap"><input type="text" id="a-doc" maxlength="20" autocomplete="off"></div>
+          </div>
+          <div class="field">
+            <label for="a-entidad">Entidad financiera</label>
+            <div class="inputwrap"><input type="text" id="a-entidad" maxlength="100" placeholder="Banco…"></div>
+          </div>
+          <div class="field">
+            <label for="a-credito">Número de crédito <span style="font-weight:400;color:var(--ink-3)">(si lo tienes)</span></label>
+            <div class="inputwrap"><input type="text" id="a-credito" maxlength="60" autocomplete="off"></div>
+          </div>
+          <div class="field">
+            <label for="a-ciudad">Ciudad</label>
+            <div class="inputwrap"><input type="text" id="a-ciudad" maxlength="60" value="Lima"></div>
+          </div>
+          <div class="field">
+            <label for="a-monto">Cuánto vas a pagar a capital</label>
+            <div class="inputwrap has-pre"><span class="affix pre cur">S/</span><input type="number" id="a-monto" min="0" step="100" inputmode="decimal"></div>
+            <span class="hint" id="a-monto-hint"></span>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:4px">
+          <button type="button" id="a-generar"
+            style="background:var(--brand);border-color:var(--brand);color:var(--on-brand)">Generar el acta</button>
+          <span class="hint" id="a-modo"></span>
+        </div>
+        <div id="a-aviso"></div>
+        <p class="card-note" style="font-size:.85rem;color:var(--ink-3)">Tu nombre y tu documento
+        se usan solo para redactar el documento y <b>no se guardan en nuestros servidores</b>. Se
+        quedan en este equipo para que no los reescribas.</p>
+      </div>
+    </section>
+
   <!-- ============ COMPARADOR ============ -->
   <div id="view-cmp" hidden style="display:flex;flex-direction:column;gap:var(--sp)">
     <div>
@@ -1087,7 +1132,6 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
     <span>Simulador de créditos · basado en la plantilla de Julio Campos</span>
     <span>Cuota por sistema francés · TCEA por TIR de los flujos reales</span>
     <span style="display:flex;gap:14px;flex-wrap:wrap">
-      <a href="https://geekfinanciero.com/asistente.html" style="color:inherit">Cuéntamelo con tus palabras</a>
       <a href="https://geekfinanciero.com/preguntas.html" style="color:inherit">Preguntas frecuentes</a>
       <a href="https://geekfinanciero.com/terminos.html" style="color:inherit">Términos y Condiciones</a>
       <a href="https://geekfinanciero.com/privacidad.html" style="color:inherit">Política de Privacidad</a>
@@ -1582,6 +1626,7 @@ function pintarSimulacion() {
   dibujar();
   pintarInsights($('#insights'), pr.insights);
   pintarTabla();
+  sugiereActa();
 }
 
 /** Deja en blanco todo lo que es de pago. Se llama cuando no hay suscripción. */
@@ -1800,6 +1845,96 @@ function csv() {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
+/* ------------------------------------------------------------------
+   El acta para el banco
+   Los datos personales se quedan en este equipo; al servidor solo viajan
+   para redactar el documento, que vuelve y se abre en otra pestaña.
+   ------------------------------------------------------------------ */
+const CLAVE_ACTA = 'gf-acta';
+const CAMPOS_ACTA = ['a-nombre', 'a-doc', 'a-entidad', 'a-credito', 'a-ciudad'];
+
+function restauraActa() {
+  try {
+    const d = JSON.parse(localStorage.getItem(CLAVE_ACTA) || '{}');
+    CAMPOS_ACTA.forEach(k => { if (d[k] && $('#' + k)) $('#' + k).value = d[k]; });
+  } catch (e) {}
+}
+function guardaActa() {
+  try {
+    const d = {};
+    CAMPOS_ACTA.forEach(k => { const e = $('#' + k); if (e) d[k] = e.value; });
+    localStorage.setItem(CLAVE_ACTA, JSON.stringify(d));
+  } catch (e) {}
+}
+
+/** Rellena el monto y la modalidad con lo que la persona ya simuló. */
+function sugiereActa() {
+  const cfg = ultimo && ultimo.cfg;
+  if (!cfg) return;
+  const p = (cfg.plan.puntuales || []).filter(a => a.monto > 0);
+  const campo = $('#a-monto');
+  if (campo && !campo.value && p.length) campo.value = p[0].monto;
+  const h = $('#a-monto-hint');
+  if (h) h.textContent = p.length ? `En tu simulación pusiste ${money0(p[0].monto)} en el mes ${p[0].mes}.` : '';
+  const m = $('#a-modo');
+  if (m) m.textContent = cfg.plan.modo === 'cuota'
+    ? 'El acta pedirá reducción de CUOTA, como elegiste arriba.'
+    : 'El acta pedirá reducción de PLAZO, como elegiste arriba.';
+}
+
+async function generarActa() {
+  const b = $('#a-generar'), av = $('#a-aviso');
+  const falta = k => !$('#' + k).value.trim();
+  if (falta('a-nombre') || falta('a-doc') || falta('a-entidad') || !(val('#a-monto') > 0)) {
+    av.innerHTML = '<div class="aviso-cuenta mal">Faltan tu nombre, tu documento, la entidad o el monto.</div>';
+    return;
+  }
+  guardaActa();
+  b.disabled = true; b.textContent = 'Preparando…';
+  av.innerHTML = '';
+
+  const pr = dePago();
+  const cfg = ultimo && ultimo.cfg;
+  const cuerpo = {
+    nombre: $('#a-nombre').value, documento: $('#a-doc').value,
+    entidad: $('#a-entidad').value, credito: $('#a-credito').value,
+    ciudad: $('#a-ciudad').value, monto: val('#a-monto'), moneda: CUR,
+    modo: cfg ? cfg.plan.modo : 'plazo',
+    simulacion: pr ? {
+      cuota: ultimo.r.gratis.cuota,
+      plazoActual: cfg ? cfg.base.meses : null,
+      plazoNuevo: pr.plazoNuevo || null,
+      ahorro: pr.ahorroNum || null,
+    } : null,
+  };
+
+  const s = sesion.get();
+  try {
+    const r = await fetch(API + '/api/acta', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(s ? { authorization: 'Bearer ' + s } : {}) },
+      body: JSON.stringify(cuerpo),
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      av.innerHTML = `<div class="aviso-cuenta mal">${esc(e.error === 'pago_requerido'
+        ? 'El acta va con la suscripción.' : (e.error || 'No se pudo generar.'))}</div>`;
+      return;
+    }
+    // Se abre en otra pestaña, lista para imprimir o guardar en PDF.
+    const html = await r.text();
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    const w = window.open(url, '_blank');
+    if (!w) av.innerHTML = '<div class="aviso-cuenta mal">Tu navegador bloqueó la ventana. Permítela y vuelve a darle.</div>';
+    else av.innerHTML = '<div class="aviso-cuenta ok">Listo: se abrió en otra pestaña.</div>';
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) {
+    av.innerHTML = '<div class="aviso-cuenta mal">No pudimos conectar. Inténtalo otra vez.</div>';
+  } finally {
+    b.disabled = false; b.textContent = 'Generar el acta';
+  }
+}
+
 /* --- barra flotante: solo cuando la respuesta no está a la vista --- */
 let heroVisible = true;
 function refrescarBarra() {
@@ -1935,6 +2070,8 @@ function conectar() {
     if (!yo) return abrirEntrar();
     $('#tarjeta-guardar').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+  $('#a-generar').addEventListener('click', generarActa);
+  CAMPOS_ACTA.forEach(k => { const e = $('#' + k); if (e) e.addEventListener('change', guardaActa); });
   $('#pro-cta').addEventListener('click', aLaCaja);
   $('#pro-cta-cmp').addEventListener('click', aLaCaja);
   $('#btn-theme').addEventListener('click', () => {
@@ -2555,6 +2692,7 @@ function conectarCuenta() {
 }
 
 restaurar();
+restauraActa();
 llegaDelAsistente();
 aplicarMoneda();
 pintarAmortizaciones();
