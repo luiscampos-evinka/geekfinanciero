@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Entrando… · Geek Financiero</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="/legal.css">
+<style>
+  .caja{max-width:440px;margin:14vh auto;padding:0 20px;text-align:center}
+  .marca{display:inline-flex;align-items:center;gap:10px;margin-bottom:26px}
+  .marca svg{display:block}
+  .marca span{font-family:var(--ff-display);font-weight:600;font-size:1.15rem;letter-spacing:-.015em}
+  .marca em{font-style:normal;color:var(--brand)}
+  h1{font-size:1.5rem;margin-bottom:10px}
+  p{margin:0 0 16px}
+  .puntos::after{content:'';animation:p 1.2s steps(4,end) infinite}
+  @keyframes p{0%{content:''}25%{content:'·'}50%{content:'· ·'}75%{content:'· · ·'}}
+  .mal{background:var(--brand-soft);border-radius:12px;padding:18px 20px;text-align:left}
+  a.boton{display:inline-block;margin-top:8px;background:var(--brand);color:#fff;text-decoration:none;
+    font-weight:650;font-size:.9rem;padding:10px 18px;border-radius:9px}
+  @media (prefers-reduced-motion:reduce){.puntos::after{animation:none;content:'…'}}
+</style>
+</head>
+<body>
+<div class="caja">
+  <div class="marca">
+    <svg width="30" height="30" viewBox="0 0 52 52" aria-hidden="true">
+      <path d="M6 6 V19 H19 V32 H32 V45 H45" fill="none" stroke="var(--brand)" stroke-width="6.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="45" cy="45" r="5.5" fill="var(--brand)"/>
+    </svg>
+    <span>Geek<em> Financiero</em></span>
+  </div>
+  <div id="zona">
+    <h1>Entrando<span class="puntos"></span></h1>
+    <p>Un segundo, estamos abriendo tu cuenta.</p>
+  </div>
+</div>
+
+<script>
+/**
+ * Esta página existe por una razón concreta: el enlace del correo NO puede
+ * apuntar a *.workers.dev — los filtros de Microsoft se tragan en silencio los
+ * correos que lo contienen. Así que el enlace llega al dominio propio y desde
+ * aquí se le pasa el token al API.
+ */
+(async () => {
+  const API = 'https://geekfinanciero-api.geekfinanciero.workers.dev';
+  const zona = document.getElementById('zona');
+  const t = new URLSearchParams(location.search).get('t');
+
+  const falla = (texto) => {
+    zona.innerHTML = `<div class="mal"><p style="margin:0 0 10px"><b>${texto}</b></p>
+      <p style="margin:0">Vuelve al simulador y pide un enlace nuevo: los enlaces
+      vencen a los 20 minutos y solo se pueden usar una vez.</p>
+      <a class="boton" href="/">Volver al simulador</a></div>`;
+  };
+
+  if (!t) return falla('Este enlace está incompleto.');
+
+  try {
+    const r = await fetch(`${API}/api/confirmar?json=1&t=${encodeURIComponent(t)}`);
+    const d = await r.json();
+    if (!r.ok || !d.sesion) return falla(d.error || 'No pudimos abrir tu cuenta.');
+    try { localStorage.setItem('gf-sesion', d.sesion); } catch (e) {}
+    location.replace('/?entrar=ok');
+  } catch (e) {
+    falla('No pudimos conectar con el servidor.');
+  }
+})();
+</script>
+</body>
+</html>
