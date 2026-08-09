@@ -91,6 +91,8 @@
     puntos.remove();
     ocupado = false; enviar.disabled = false;
 
+    if (d?.error === 'entra_primero') return muro(401);
+    if (d?.error === 'pago_requerido') return muro(402);
     if (!d || d.error) { pinta('mal', d?.error || 'Algo falló. Prueba otra vez.'); return; }
 
     historial.push({ rol: 'asesor', texto: d.respuesta });
@@ -197,6 +199,37 @@
       </div>`;
   }
 
+  /* ---------- la puerta: el asesor va con la suscripción ---------- */
+  const MUESTRA = [
+    ['yo', 'pago 900 al mes por mi moto y no sé la tasa'],
+    ['ia', 'Perfecto, con la cuota mensual puedo deducir la tasa. Dime cuánto te prestaron '
+         + '—o cuánto debes hoy— y con eso la calculo.'],
+    ['yo', 'es del bcp y me faltan 2 años'],
+    ['ia', 'Anotado: BCP, dos años por delante. Me falta solo el monto. Está en tu estado de '
+         + 'cuenta o en la app del banco.'],
+    ['yo', 'me prestaron 20 mil'],
+    ['ia', 'Listo. Con esos tres datos deduje tu tasa y abajo tienes tu cuota, tus intereses y '
+         + 'tu costo real.'],
+  ];
+
+  function muro(motivo) {
+    charla.innerHTML = '';
+    MUESTRA.forEach(([r, t]) => { const d = pinta(r === 'yo' ? 'yo' : 'ia', t); d.style.opacity = '.55'; });
+    document.querySelector('.caja').style.display = 'none';
+    document.getElementById('ejemplos').style.display = 'none';
+    salida.innerHTML = `
+      <div class="siguiente">
+        <h2>El asesor va con la suscripción</h2>
+        <p>Arriba tienes una conversación de verdad, para que veas de qué va. Con la suscripción
+        hablas tú: te deduce la tasa desde tu cuota, reconoce tu banco, y se acuerda de tus
+        créditos y de lo que ya pagaste a capital.</p>
+        <p style="font-size:.92rem;color:var(--ink-2)"><b>El simulador sigue siendo gratis</b> —
+        tu cuota, tus intereses y tu costo real, sin cuenta.</p>
+        <a class="boton" href="/">${motivo === 401 ? 'Crear mi cuenta' : 'Suscribirme'} →</a>
+        <a class="suave" href="/preguntas.html">O leer cómo funciona</a>
+      </div>`;
+  }
+
   /* ---------- arranque ---------- */
   const cuenta = () => { $('#cuenta').textContent = `${texto.value.length} / 700`; };
   texto.addEventListener('input', cuenta);
@@ -216,14 +249,11 @@
   (async () => {
     cuenta();
     const s = sesion();
-    if (!s) {
-      pinta('ia', 'Hola. Cuéntame de tu crédito con tus palabras — cuánto debes, a qué banco, '
-        + 'lo que sepas. Si no sabes la tasa no pasa nada: con cuánto pagas al mes la deduzco.');
-      return;
-    }
+    if (!s) return muro(401);
     try {
       const r = await fetch(`${API}/api/yo`, { headers: { authorization: 'Bearer ' + s } });
       const yo = await r.json();
+      if (!yo?.activo) return muro(402);
       const nombre = yo?.correo ? yo.correo.split('@')[0].split(/[._-]/)[0] : null;
       const n = nombre ? nombre.charAt(0).toUpperCase() + nombre.slice(1) : null;
       if (n) $('#saludo').innerHTML = `Hola, ${esc(n)}.<br>Cuéntame en qué estás.`;
