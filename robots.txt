@@ -1,0 +1,9 @@
+# geekfinanciero.com
+User-agent: *
+Allow: /
+Disallow: /panel.html
+Disallow: /panel.js
+Disallow: /entrar.html
+Disallow: /clave.html
+
+Sitemap: https://geekfinanciero.com/sitemap.xml

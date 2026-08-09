@@ -4,12 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Simulador de créditos · cuánto te ahorras si adelantas pagos</title>
-<meta name="description" content="Calcula cuánto te ahorras adelantando pagos de tu crédito: cuota, plazo, intereses y TCEA. Incluye compra de deuda y comparador de dos bancos. Gratis y sin registro.">
+<meta name="description" content="Calcula cuánto te ahorras pagando a capital (amortizando) tu crédito: cuota, plazo, intereses y TCEA. Con compra de deuda, doble cuota de julio y diciembre y comparador de dos bancos. La cuota y la TCEA, gratis y sin registro.">
+<link rel="icon" type="image/png" sizes="32x32" href="/icono-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icono-16.png">
+<link rel="apple-touch-icon" href="/icono-180.png">
 <link rel="canonical" href="https://geekfinanciero.com/">
 <meta name="theme-color" content="#f2efe6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0e0b" media="(prefers-color-scheme: dark)">
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%277%27%20fill%3D%27%23009184%27%2F%3E%3Cpath%20d%3D%27M7%209h5v7h5v6h8%27%20fill%3D%27none%27%20stroke%3D%27%23fff%27%20stroke-width%3D%273%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%277%27%20fill%3D%27%23009184%27%2F%3E%3Cpath%20d%3D%27M7%209h5v7h5v6h8%27%20fill%3D%27none%27%20stroke%3D%27%23fff%27%20stroke-width%3D%273%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Geek Financiero">
 <meta property="og:locale" content="es_PE">
@@ -21,6 +22,28 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebSite","@id":"https://geekfinanciero.com/#sitio","url":"https://geekfinanciero.com/",
+  "name":"Geek Financiero","inLanguage":"es-PE",
+  "description":"Simulador peruano de créditos: calcula cuota, intereses y TCEA, y cuánto te ahorras pagando a capital antes de tiempo.",
+  "publisher":{"@id":"https://geekfinanciero.com/#autor"}},
+ {"@type":"Person","@id":"https://geekfinanciero.com/#autor","name":"Julio Campos",
+  "jobTitle":"Divulgador de finanzas personales","knowsAbout":["Finanzas personales","Cr\u00e9ditos","Amortizaci\u00f3n","TCEA"],
+  "address":{"@type":"PostalAddress","addressLocality":"Lima","addressCountry":"PE"}},
+ {"@type":"SoftwareApplication","@id":"https://geekfinanciero.com/#app",
+  "name":"Simulador de cr\u00e9ditos de Geek Financiero","url":"https://geekfinanciero.com/",
+  "applicationCategory":"FinanceApplication","operatingSystem":"Web","inLanguage":"es-PE",
+  "description":"Calcula la cuota, los intereses y la TCEA de un cr\u00e9dito, y cu\u00e1nto te ahorras pagando a capital en meses concretos, con reducci\u00f3n de plazo o de cuota. Incluye compra de deuda, doble cuota de julio y diciembre, cuota bal\u00f3n, periodo de gracia y comparador de dos cr\u00e9ditos por TCEA.",
+  "featureList":["Cuota, intereses y TCEA gratis y sin registro","Pagos a capital en meses concretos","Reducci\u00f3n de plazo o reducci\u00f3n de cuota","Compra de deuda por otra entidad","Doble cuota en julio y diciembre","Cuota bal\u00f3n y periodo de gracia","Comparador de dos cr\u00e9ditos por TCEA","Cronograma mes a mes y descarga en Excel"],
+  "offers":[{"@type":"Offer","name":"Gratis","price":"0","priceCurrency":"PEN",
+    "description":"Cuota, total a pagar, intereses y TCEA. Sin cuenta."},
+   {"@type":"Offer","name":"Suscripci\u00f3n","price":"20","priceCurrency":"PEN",
+    "description":"Cu\u00e1nto te ahorras pagando a capital, gr\u00e1ficos, cronograma, descarga en Excel y comparador. Se cancela cuando quieras.",
+    "availability":"https://schema.org/InStock"}],
+  "author":{"@id":"https://geekfinanciero.com/#autor"}}
+]}
+</script>
 </head>
 <body>
 
@@ -569,10 +592,13 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
   <header class="topbar">
     <div class="t">
       <div class="marca">
-        <svg width="34" height="34" viewBox="0 0 52 52" aria-hidden="true">
-          <path d="M6 6 V19 H19 V32 H32 V45 H45" fill="none" stroke="var(--brand)" stroke-width="6.5"
-                stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="45" cy="45" r="5.5" fill="var(--brand)"/>
+        <svg viewBox="0 0 258 102" width="86" height="34" aria-hidden="true" fill="none">
+          <path d="M78,6 C52,6 41,13 41,32 L41,40 C41,47 31,51 8,51 C31,51 41,55 41,62 L41,70 C41,89 52,96 78,96"
+                stroke="var(--brand)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="118" y="76" font-family="var(--ff-display), Georgia, serif" font-weight="600"
+                font-size="76" fill="var(--brand)" text-anchor="middle">S/</text>
+          <path d="M180,6 C206,6 217,13 217,32 L217,40 C217,47 227,51 250,51 C227,51 217,55 217,62 L217,70 C217,89 206,96 180,96"
+                stroke="var(--brand)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <span class="nombre">Geek<em> Financiero</em></span>
       </div>
@@ -948,6 +974,7 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
           <span class="frase">pago anticipado a capital, con reducción de plazo</span> (o «…con reducción
           de cuota»). Por la <b>Ley N.° 28587</b> no te pueden cobrar penalidad por pagar antes, y están
           <b>obligados a preguntarte</b> cuál de las dos quieres.
+          <a href="/preguntas.html" style="color:inherit;font-weight:700;white-space:nowrap">Más dudas resueltas →</a>
         </div>
 
     <section class="tarjeta" id="tarjeta-guardar">
@@ -1060,6 +1087,7 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
     <span>Simulador de créditos · basado en la plantilla de Julio Campos</span>
     <span>Cuota por sistema francés · TCEA por TIR de los flujos reales</span>
     <span style="display:flex;gap:14px;flex-wrap:wrap">
+      <a href="https://geekfinanciero.com/preguntas.html" style="color:inherit">Preguntas frecuentes</a>
       <a href="https://geekfinanciero.com/terminos.html" style="color:inherit">Términos y Condiciones</a>
       <a href="https://geekfinanciero.com/privacidad.html" style="color:inherit">Política de Privacidad</a>
     </span>
