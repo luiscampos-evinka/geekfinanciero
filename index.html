@@ -314,7 +314,12 @@ input[type=month]:focus,select:focus{outline:none;border-color:var(--brand);
 
 /* ---------- la elección explicada con dibujo ---------- */
 .eleccion{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media (max-width:560px){ .eleccion{grid-template-columns:1fr} }
+@media (max-width:560px){
+  .eleccion{gap:10px}
+  .op{padding:13px 12px;gap:7px}
+  .op strong{font-size:.92rem}
+  .op span{font-size:.78rem;line-height:1.45}
+}
 .op{
   position:relative;display:flex;flex-direction:column;gap:9px;
   padding:16px;border:1.5px solid var(--rule);border-radius:12px;background:var(--inset);cursor:pointer;
@@ -385,6 +390,28 @@ input[type=month]:focus,select:focus{outline:none;border-color:var(--brand);
 .antes{color:var(--ink-3);font-weight:600;font-size:.86em}
 .flecha{color:var(--ink-3)}
 
+/* ---------- vitrina de lo que es de pago ---------- */
+.pro .demo{background:var(--brand-soft);border-radius:14px;padding:20px 22px;margin-bottom:20px}
+.pro .demo .eyebrow{display:block;font-size:.75rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:9px}
+.pro .demo .frase{font-size:1.02rem;line-height:1.62;margin:0}
+.pro .demo .frase b{font-family:var(--ff-num);font-variant-numeric:tabular-nums}
+.pro .demo .pie{margin:10px 0 0;font-size:.87rem;color:var(--ink-2)}
+.pro .rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:12px}
+.pro .it{display:flex;flex-direction:column;gap:9px;padding:14px;border:1px solid var(--rule);
+  border-radius:12px;background:var(--surface)}
+.pro .it svg{display:block;width:100%;height:46px;opacity:.9}
+.pro .it b{font-size:.9rem;font-weight:650;line-height:1.3}
+.pro .it span{font-size:.8rem;color:var(--ink-2);line-height:1.45}
+.pro .cierre{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:22px}
+.pro .precio{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.pro .precio .n{font-family:var(--ff-num);font-weight:700;font-size:1.7rem;letter-spacing:-.02em}
+.pro .precio .mes{color:var(--ink-2);font-size:.95rem}
+.pro .cierre button{background:var(--brand);border-color:var(--brand);color:var(--on-brand);
+  font-size:.98rem;padding:12px 22px}
+.pro .card-note{margin-top:12px;font-size:.85rem;color:var(--ink-3)}
+@media (max-width:430px){ .pro .rejilla{grid-template-columns:1fr 1fr} .pro .it svg{height:38px} }
+
 /* ---------- barra flotante ---------- */
 .barra{
   position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(0);
@@ -399,6 +426,8 @@ input[type=month]:focus,select:focus{outline:none;border-color:var(--brand);
 @media (max-width:520px){ .barra{padding:8px 8px 8px 16px;gap:9px;font-size:.85rem} }
 .barra .bs{color:color-mix(in srgb, var(--bg) 72%, transparent);white-space:nowrap}
 .barra button{background:var(--bg);color:var(--ink);border-color:transparent;padding:7px 14px;border-radius:999px}
+.barra button.bg{background:var(--brand);color:var(--on-brand)}
+@media (max-width:380px){ .barra button:not(.bg){display:none} }
 .barra button:hover{background:var(--bg);opacity:.85}
 @media (max-width:520px){ .barra .bs{display:none} }
 
@@ -469,6 +498,7 @@ thead th{
   padding:11px 13px;border-bottom:1px solid var(--rule-2);white-space:nowrap;
 }
 thead th:first-child{text-align:left}
+thead th span{display:block;font-weight:500;font-size:.9em;opacity:.72;text-transform:none}
 tbody td{padding:8px 13px;text-align:right;border-bottom:1px solid var(--rule);
   font-family:var(--ff-num);font-variant-numeric:tabular-nums;white-space:nowrap}
 tbody td:first-child{text-align:left;color:var(--ink-3)}
@@ -515,8 +545,8 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
         </svg>
         <span class="nombre">Geek<em> Financiero</em></span>
       </div>
-      <h1>¿Cuánto te ahorras si adelantas pagos?</h1>
-      <p class="lede" style="margin-top:8px">Pon los datos de tu crédito, dinos cuánto puedes adelantar y mira —en soles y en meses— qué pasa. Sin fórmulas: los números salen solos.</p>
+      <h1>¿Cuánto te ahorras si amortizas tu crédito?</h1>
+      <p class="lede" style="margin-top:8px">Pon los datos de tu crédito, dinos cuánto puedes amortizar y mira —en soles y en meses— qué pasa.</p>
     </div>
     <div class="tools no-print">
       <div class="seg" role="radiogroup" aria-label="Moneda">
@@ -596,8 +626,9 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
           </div>
         </div>
 
-        <div class="sep"></div>
-
+        <details class="especial">
+          <summary>Lo que el banco te suma encima — desgravamen, portes, seguros, comisión</summary>
+          <div class="dentro">
         <div class="grid c3">
           <div class="field">
             <label for="f-desg">Seguro de desgravamen
@@ -629,6 +660,8 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
             <span class="hint">Se descuenta de lo que recibes.</span>
           </div>
         </div>
+          </div>
+        </details>
 
         <details class="especial">
           <summary>¿Tu crédito tiene algo especial? — gracia, cuota balón, doble cuota</summary>
@@ -700,31 +733,40 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
       </div>
     </section>
 
+    <section class="tarjeta pro" id="muro-premium" hidden>
+      <header><div class="t">
+        <h2>Hasta aquí es gratis. Lo que sigue es lo que vale.</h2>
+        <p class="lede">Ya sabes cuánto te presta el banco y cuánto pagarías al mes. Lo caro es la
+        otra pregunta: <b>cuánto te ahorras si pagas a capital</b>, cuánto antes terminas y en qué
+        mes conviene hacerlo.</p>
+      </div></header>
+      <div class="body">
+        <div class="demo" id="pro-demo"></div>
+        <div class="rejilla" id="pro-lista"></div>
+        <div class="cierre">
+          <div class="precio"><span class="n">S/ 20</span><span class="mes">al mes</span></div>
+          <button type="button" id="pro-cta">Quiero verlo con mis números</button>
+        </div>
+        <p class="card-note">Se cancela cuando quieras, sin permanencia ni cobro automático.
+        Simular tu crédito seguirá siendo gratis siempre.</p>
+      </div>
+    </section>
+
     <!-- ---------- PASO 2 ---------- -->
-    <section class="paso">
+    <section class="paso premium" hidden>
       <header>
         <span class="n">2</span>
         <div class="t">
-          <h2>¿Cuánto puedes adelantar?</h2>
-          <p class="lede">Adelantar (o «amortizar») es poner plata extra que va directo a la deuda, no a los intereses. Es lo único que hace que un crédito se acorte.</p>
+          <h2>¿Cuánto puedes pagar a capital?</h2>
+          <p class="lede">Amortizar —o «pagar a capital»— es poner plata extra que va directo a la deuda, no a los intereses. Es lo único que hace que un crédito se acorte.</p>
         </div>
       </header>
       <div class="body">
 
-        <div class="aviso-legal">
-          <strong>Ojo con cómo se lo pides al banco — no es un detalle.</strong>
-          «Adelanto de cuotas» y «pago anticipado a capital» <b>no son lo mismo</b>: el primero te cubre
-          cuotas futuras que ya vienen cargadas de intereses; el segundo baja tu deuda, que es lo que
-          este simulador calcula. Pide siempre, con estas palabras:
-          <span class="frase">pago anticipado a capital, con reducción de plazo</span> (o «…con reducción
-          de cuota»). Por la <b>Ley N.° 28587</b> no te pueden cobrar penalidad por pagar antes, y están
-          <b>obligados a preguntarte</b> cuál de las dos quieres.
-        </div>
-
         <div>
-          <h3 style="margin-bottom:4px">Primero: ¿qué quieres ganar?</h3>
-          <p class="lede" style="font-size:.9rem;margin-bottom:14px">Cuando adelantas plata, el banco te deja elegir una de estas dos. Cambia mucho el resultado.</p>
-          <div class="eleccion" role="radiogroup" aria-label="Qué prefieres al adelantar">
+          <h3 style="margin-bottom:4px">¿Qué quieres ganar?</h3>
+          <p class="lede" style="font-size:.88rem;margin-bottom:12px">El banco te deja elegir una de las dos. Cambia mucho el resultado.</p>
+          <div class="eleccion" role="radiogroup" aria-label="Qué prefieres al amortizar">
             <label class="op">
               <input type="radio" name="modo" value="plazo" checked>
               <svg viewBox="0 0 190 92" aria-hidden="true">
@@ -759,7 +801,7 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
         <div class="sep"></div>
 
         <div>
-          <h3 style="margin-bottom:12px">Ahora: ¿cómo vas a adelantar?</h3>
+          <h3 style="margin-bottom:12px">¿Cómo vas a amortizar?</h3>
 
           <div class="bloque" id="blk-puntual">
             <label class="head">
@@ -768,9 +810,9 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
               <span class="state">activo</span>
             </label>
             <div class="content">
-              <div class="rowlabels"><span>En el mes</span><span>Adelanto</span></div>
+              <div class="rowlabels"><span>En el mes</span><span>Amortización</span></div>
               <div class="rows" id="am-rows"></div>
-              <button type="button" id="btn-add-am" class="ghost no-print" style="align-self:flex-start">+ Añadir otro adelanto</button>
+              <button type="button" id="btn-add-am" class="ghost no-print" style="align-self:flex-start">+ Añadir otra amortización</button>
             </div>
           </div>
 
@@ -833,7 +875,7 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
     </section>
 
     <!-- ---------- PASO 3: LA RESPUESTA ---------- -->
-    <section class="respuesta" id="hero">
+    <section class="respuesta premium" id="hero" hidden>
       <div class="frase"><p id="r-frase"></p></div>
       <div class="cuerpo">
         <div class="lado">
@@ -853,50 +895,60 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
       </div>
     </section>
 
+    <div class="aviso-legal" style="margin-top:-10px">
+          <strong>Ojo con cómo se lo pides al banco — no es un detalle.</strong>
+          «Adelanto de cuotas» y «pago anticipado a capital» <b>no son lo mismo</b>: el primero te cubre
+          cuotas futuras que ya vienen cargadas de intereses; el segundo baja tu deuda, que es lo que
+          este simulador calcula. Pide siempre, con estas palabras:
+          <span class="frase">pago anticipado a capital, con reducción de plazo</span> (o «…con reducción
+          de cuota»). Por la <b>Ley N.° 28587</b> no te pueden cobrar penalidad por pagar antes, y están
+          <b>obligados a preguntarte</b> cuál de las dos quieres.
+        </div>
+
     <section class="tarjeta" id="tarjeta-guardar">
-      <header><div class="t"><h2>Guarda este crédito</h2>
-        <p class="lede">Regístralo una vez y cada mes te dice cuánto llevas, cuánto falta y cuánto has ahorrado.</p></div></header>
+      <header><div class="t"><h2 id="caja-titulo">Guarda este crédito</h2>
+        <p class="lede" id="caja-lede">Regístralo una vez y cada mes te dice cuánto llevas, cuánto falta y cuánto has ahorrado.</p></div></header>
       <div class="body" id="zona-guardar"></div>
     </section>
 
-    <section class="tarjeta">
+    <section class="tarjeta premium" hidden>
       <header><div class="t"><h2>Cómo baja tu deuda</h2><p class="lede">Cada línea es lo que todavía le debes al banco, mes a mes.</p></div></header>
       <div class="body">
         <div class="legend">
           <span class="item"><span class="swatch" style="background:var(--serie-a)"></span>Como ibas</span>
-          <span class="item"><span class="swatch" style="background:var(--serie-b)"></span>Adelantando</span>
+          <span class="item"><span class="swatch" style="background:var(--serie-b)"></span>Amortizando</span>
         </div>
         <div class="chartbox" id="chart-saldo"><div class="tip"></div></div>
         <p class="piecaption">Mientras más rápido cae la línea verde, menos meses pagas intereses. Pasa el dedo o el mouse por encima para ver cuánto debes en cualquier mes.</p>
       </div>
     </section>
 
-    <section class="tarjeta">
+    <section class="tarjeta premium" hidden>
       <header><div class="t"><h2>A dónde se va tu plata</h2><p class="lede">De todo lo que pagas, una parte es la deuda y otra es lo que el banco te cobra por prestártela.</p></div></header>
       <div class="body">
         <div class="chartbox" id="chart-comp"></div>
       </div>
     </section>
 
-    <section class="tarjeta">
+    <section class="tarjeta premium" hidden>
       <header><div class="t"><h2>Qué te dicen estos números</h2><p class="lede">Leído en criollo, sobre tu propia simulación.</p></div></header>
       <div class="body">
         <div id="insights"></div>
         <p class="aviso">
           Esto es una <b>simulación para aprender</b>, no una recomendación de inversión ni una oferta de
           crédito. Las cifras pueden variar un poquito frente a las del banco, que aplica sus propios
-          redondeos, días exactos, comisiones y seguros. Antes de adelantar, pide a tu entidad la
+          redondeos, días exactos, comisiones y seguros. Antes de amortizar, pide a tu entidad la
           liquidación oficial y confirma que no te cobren penalidad por pagar antes.
           Cada persona es responsable de sus propias decisiones.
         </p>
       </div>
     </section>
 
-    <details class="crono">
+    <details class="crono premium" hidden>
       <summary>Ver el cronograma mes a mes</summary>
       <div class="cronotools no-print">
         <div class="seg" role="radiogroup" aria-label="Qué cronograma ver">
-          <label><input type="radio" name="crono" value="plan" checked><span>Adelantando</span></label>
+          <label><input type="radio" name="crono" value="plan" checked><span>Amortizando</span></label>
           <label><input type="radio" name="crono" value="base"><span>Como ibas</span></label>
         </div>
         <button type="button" id="btn-csv">Descargar en Excel (CSV)</button>
@@ -905,7 +957,9 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
         <table id="tbl">
           <thead><tr>
             <th>Mes</th><th>Debes al empezar</th><th>Cuota</th><th>Interés</th>
-            <th>Baja tu deuda</th><th>Adelanto</th><th>Desgravamen</th><th>Te queda debiendo</th>
+            <th>Capital<span>baja tu deuda</span></th>
+            <th>Extra a capital<span>lo que amortizaste</span></th>
+            <th>Desgravamen</th><th>Te queda debiendo</th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -919,8 +973,18 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
       <h2 style="font-size:clamp(1.5rem,3.4vw,2rem)">Dos ofertas, lado a lado</h2>
       <p class="lede" style="margin-top:8px">Dos bancos, dos bonos, dos plazos. Llena las dos columnas y mira cuál te cuesta menos <b>de verdad</b>: casi nunca es la de la cuota más baja.</p>
     </div>
-    <div class="vs" id="vs-forms"></div>
-    <section class="tarjeta">
+    <section class="tarjeta pro" id="muro-cmp" hidden>
+      <div class="body">
+        <div class="demo" id="cmp-demo"></div>
+        <div class="cierre">
+          <div class="precio"><span class="n">S/ 20</span><span class="mes">al mes</span></div>
+          <button type="button" id="pro-cta-cmp">Comparar mis dos ofertas</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="vs premium" id="vs-forms" hidden></div>
+    <section class="tarjeta premium" hidden>
       <header><div class="t"><h2>Cuál conviene</h2></div></header>
       <div class="body" style="display:flex;flex-direction:column;gap:20px">
         <div class="veredicto" id="cmp-verdict"></div>
@@ -1057,6 +1121,7 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
   <span class="bv" id="barra-v">—</span>
   <span class="bs" id="barra-s"></span>
   <button type="button" id="barra-btn">Ver detalle</button>
+  <button type="button" id="barra-guardar" class="bg">Guardarlo</button>
 </div>
 
 <script>
@@ -1443,11 +1508,11 @@ function pintarAmortizaciones() {
     row.className = 'amrow';
     row.innerHTML = `
       <div class="inputwrap"><input type="number" min="1" step="1" inputmode="numeric"
-        aria-label="Mes del adelanto ${k + 1}" value="${a.mes}"></div>
+        aria-label="Mes de la amortización ${k + 1}" value="${a.mes}"></div>
       <div class="inputwrap has-pre"><span class="affix pre cur">${CUR}</span>
         <input type="number" min="0" step="500" inputmode="decimal"
-        aria-label="Monto del adelanto ${k + 1}" value="${a.monto}"></div>
-      <button type="button" class="no-print" aria-label="Quitar el adelanto ${k + 1}">✕</button>`;
+        aria-label="Monto de la amortización ${k + 1}" value="${a.monto}"></div>
+      <button type="button" class="no-print" aria-label="Quitar la amortización ${k + 1}">✕</button>`;
     const [im, ia] = row.querySelectorAll('input');
     im.addEventListener('input', () => { a.mes = Math.max(1, Math.round(parseFloat(im.value) || 1)); recalcular(); });
     ia.addEventListener('input', () => { a.monto = Math.max(0, parseFloat(ia.value) || 0); recalcular(); });
@@ -1512,10 +1577,10 @@ function leerConfig() {
 function describirPlan(cfg) {
   const partes = [];
   const p = cfg.plan.puntuales.filter(a => a.monto > 0);
-  if (p.length === 1) partes.push(`adelantas <b>${money0(p[0].monto)}</b> en el mes ${p[0].mes}`);
+  if (p.length === 1) partes.push(`amortizas <b>${money0(p[0].monto)}</b> en el mes ${p[0].mes}`);
   else if (p.length > 1) {
     const lista = p.map(a => `<b>${money0(a.monto)}</b> en el mes ${a.mes}`);
-    partes.push('adelantas ' + lista.slice(0, -1).join(', ') + ' y ' + lista[lista.length - 1]);
+    partes.push('amortizas ' + lista.slice(0, -1).join(', ') + ' y ' + lista[lista.length - 1]);
   }
   if (cfg.plan.mensual && cfg.plan.mensual.monto > 0) {
     partes.push(`pones <b>${money0(cfg.plan.mensual.monto)}</b> extra cada mes`);
@@ -1575,8 +1640,8 @@ function insights(base, plan, cfg) {
     out.push({
       tono: 'neutro', mark: 'mes ' + (cruce + 1),
       titulo: `Recién en el mes ${cruce + 1} tu cuota empieza a bajar más deuda que intereses`,
-      texto: `Hasta ese mes ya habrás entregado <b>${money0(antes)}</b> solo en intereses. Por eso adelantar ` +
-             `temprano vale mucho más que adelantar tarde: al inicio casi toda tu cuota es alquiler del ` +
+      texto: `Hasta ese mes ya habrás entregado <b>${money0(antes)}</b> solo en intereses. Por eso amortizar ` +
+             `temprano vale mucho más que amortizar tarde: al inicio casi toda tu cuota es alquiler del ` +
              `dinero, no es tu deuda bajando.`
     });
   }
@@ -1623,9 +1688,9 @@ function insights(base, plan, cfg) {
       const porSol = ahorro / aportado;
       out.push({
         tono: 'good', mark: '×' + nf(1 + porSol, 2),
-        titulo: 'Cada sol que adelantas te devuelve más de un sol',
+        titulo: 'Cada sol que amortizas te devuelve más de un sol',
         texto: `Pones <b>${money0(aportado)}</b> de tu bolsillo y dejas de pagar <b>${money0(ahorro)}</b> en ` +
-               `intereses: <b>${money(porSol)}</b> de ahorro por cada sol adelantado. Adelantar rinde lo ` +
+               `intereses: <b>${money(porSol)}</b> de ahorro por cada sol amortizado. Amortizar rinde lo ` +
                `mismo que la tasa de tu crédito —<b>${pct(cfg.base.tea)}</b>— sin riesgo y sin impuestos. ` +
                `Compáralo con lo que te paga el banco por un depósito a plazo antes de decidir dónde pones esa plata.`
       });
@@ -1643,7 +1708,7 @@ function insights(base, plan, cfg) {
         titulo: gana
           ? `Elegiste bien: «${esPlazo ? 'terminar antes' : 'pagar menos cada mes'}» te ahorra más`
           : `«${esPlazo ? 'Pagar menos cada mes' : 'Terminar antes'}» te ahorraría ${money0(dif)} más`,
-        texto: `Con la misma plata adelantada, <b>terminar antes</b> ahorra ` +
+        texto: `Con la misma plata amortizada, <b>terminar antes</b> ahorra ` +
                `<b>${money0(esPlazo ? ahorro : ahorroOtro)}</b> y <b>pagar menos cada mes</b> ahorra ` +
                `<b>${money0(esPlazo ? ahorroOtro : ahorro)}</b>. Terminar antes casi siempre ahorra más ` +
                `porque matas meses enteros de intereses. La pregunta no es cuál ahorra más, sino si ` +
@@ -1660,7 +1725,7 @@ function insights(base, plan, cfg) {
         out.push({
           tono: 'warn', mark: '1 año',
           titulo: 'Dejarlo para el próximo año te cuesta plata',
-          texto: `Si hicieras exactamente los mismos adelantos doce meses más tarde, pagarías ` +
+          texto: `Si hicieras exactamente las mismas amortizaciones doce meses más tarde, pagarías ` +
                  `<b>${money0(costo)}</b> más en intereses. Ese es el precio de postergarlo.`
         });
       }
@@ -1691,7 +1756,7 @@ function insights(base, plan, cfg) {
   } else {
     out.push({
       tono: 'neutro', mark: '→',
-      titulo: 'Todavía no pusiste ningún adelanto',
+      titulo: 'Todavía no pusiste ninguna amortización',
       texto: `Prende una de las tres opciones del paso 2 y acá vas a ver cuánto te ahorras y cuántos ` +
              `meses te quitas de encima.`
     });
@@ -1810,12 +1875,12 @@ function dibujar() {
   const { base, plan } = ultimo;
   lineChart($('#chart-saldo'), [
     { nombre: 'Como ibas', color: css('--serie-a'), etiqueta: 'Como ibas', datos: serieSaldo(base) },
-    { nombre: 'Adelantando', color: css('--serie-b'), etiqueta: 'Adelantando', datos: serieSaldo(plan), relleno: true }
+    { nombre: 'Amortizando', color: css('--serie-b'), etiqueta: 'Amortizando', datos: serieSaldo(plan), relleno: true }
   ]);
   stackedBars($('#chart-comp'), [
     { nombre: 'Como ibas', capital: ultimo.cfg.base.principal, interes: base.totalInteres,
       color: css('--serie-a'), suave: css('--serie-a-soft') },
-    { nombre: 'Adelantando', capital: ultimo.cfg.base.principal, interes: plan.totalInteres,
+    { nombre: 'Amortizando', capital: ultimo.cfg.base.principal, interes: plan.totalInteres,
       color: css('--serie-b'), suave: css('--serie-b-soft') }
   ]);
 }
@@ -2032,14 +2097,14 @@ function csv() {
   if (!ultimo) return;
   const cual = document.querySelector('input[name=crono]:checked').value;
   const res = cual === 'base' ? ultimo.base : ultimo.plan;
-  const cab = ['Mes', 'Debes al empezar', 'Cuota', 'Interes', 'Baja tu deuda', 'Adelanto', 'Desgravamen', 'Te queda debiendo'];
+  const cab = ['Mes', 'Debes al empezar', 'Cuota', 'Interes', 'Capital', 'Extra a capital', 'Desgravamen', 'Te queda debiendo'];
   const lineas = [cab.join(';')].concat(res.rows.map(r =>
     [r.mes, r.saldoIni, r.cuota, r.interes, r.amort, r.extra, r.desgravamen, r.saldoFin]
       .map((v, i) => i === 0 ? v : v.toFixed(2).replace('.', ',')).join(';')));
   const blob = new Blob(['﻿' + lineas.join('\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `cronograma-${cual === 'base' ? 'como-ibas' : 'adelantando'}.csv`;
+  a.download = `cronograma-${cual === 'base' ? 'como-ibas' : 'amortizando'}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
@@ -2049,7 +2114,7 @@ let heroVisible = true;
 function refrescarBarra() {
   const b = $('#barra');
   const sim = document.querySelector('input[name=vista]:checked').value === 'sim';
-  b.hidden = !(sim && !heroVisible && b.dataset.hay === '1');
+  b.hidden = !(sim && !heroVisible && b.dataset.hay === '1' && esPro());
 }
 
 function conectar() {
@@ -2116,6 +2181,16 @@ function conectar() {
   $('#btn-csv').addEventListener('click', csv);
   $('#btn-print').addEventListener('click', () => window.print());
   $('#barra-btn').addEventListener('click', () => $('#hero').scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  $('#barra-guardar').addEventListener('click', () =>
+    $('#tarjeta-guardar').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  // Los dos botones de la vitrina hacen lo mismo: llevar a la caja. Si todavía
+  // no hay cuenta, primero se crea —el pago viene ahí dentro.
+  const aLaCaja = () => {
+    if (!yo) return abrirEntrar();
+    $('#tarjeta-guardar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  $('#pro-cta').addEventListener('click', aLaCaja);
+  $('#pro-cta-cmp').addEventListener('click', aLaCaja);
   $('#btn-theme').addEventListener('click', () => {
     const oscuro = document.documentElement.dataset.theme
       ? document.documentElement.dataset.theme === 'dark'
@@ -2190,18 +2265,104 @@ function recogeSesionDeLaUrl() {
 
 async function refrescarCuenta() {
   const el = $('#mi-correo'), boton = $('#btn-entrar');
-  if (!sesion.get()) { yo = null; el.hidden = true; boton.textContent = 'Entrar'; return pintarMuro(); }
+  if (!sesion.get()) { yo = null; el.hidden = true; boton.textContent = 'Entrar'; return (pintarMuro(), aplicarPremium()); }
   const { cuerpo } = await api('/api/yo');
   yo = (cuerpo && cuerpo.correo) ? cuerpo : null;
-  if (!yo) { sesion.set(null); el.hidden = true; boton.textContent = 'Entrar'; return pintarMuro(); }
+  if (!yo) { sesion.set(null); el.hidden = true; boton.textContent = 'Entrar'; return (pintarMuro(), aplicarPremium()); }
   el.hidden = false;
   el.textContent = yo.correo;
   boton.textContent = 'Salir';
   pintarMuro();
+  aplicarPremium();
 }
 
 function fechaLarga(epoch) {
   return new Date(epoch * 1000).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+const PRECIO_LISTA = 20;   // solo para mostrar: el cobro real lo fija el servidor
+
+/* ------------------------------------------------------------------
+   Lo que es de pago
+   Gratis: el crédito en sí —cuánto te prestan, la cuota, la TCEA—.
+   De pago: pagar a capital y todo lo que se desprende de ello, más el
+   comparador. La vitrina enseña el resultado con un ejemplo calculado
+   por este mismo motor, para que nadie compre a ciegas.
+   ------------------------------------------------------------------ */
+const esPro = () => !!(yo && yo.activo);
+
+const EJEMPLO = {
+  principal: 100000, tea: 0.12, meses: 60, desg: 0.0052, portes: 0, seguroBien: 0,
+  comision: 0, balon: 0, gracia: null, dobleCuota: false,
+  inicio: { anio: 2026, mes: 9 }, puntuales: [], mensual: null, compra: null, modo: 'plazo',
+};
+
+const FICHAS = [
+  ['Cuánto te ahorras', 'En soles y en meses, con tus propias cifras.',
+   '<path d="M4 34 C22 34 30 12 56 12" fill="none" stroke="var(--serie-b)" stroke-width="3" stroke-linecap="round"/><circle cx="56" cy="12" r="4" fill="var(--serie-b)"/>'],
+  ['Cómo baja tu deuda', 'Mes a mes, contra cómo ibas sin amortizar.',
+   '<path d="M4 8 L56 36" stroke="var(--rule-2)" stroke-width="2.5" stroke-dasharray="4 3" fill="none"/><path d="M4 8 C20 20 30 34 40 36" stroke="var(--serie-b)" stroke-width="3" fill="none" stroke-linecap="round"/>'],
+  ['A dónde se va tu plata', 'Cuánto es deuda y cuánto se lleva el banco.',
+   '<rect x="6" y="20" width="13" height="18" rx="2" fill="var(--serie-a)"/><rect x="6" y="8" width="13" height="12" rx="2" fill="var(--serie-b)"/><rect x="26" y="24" width="13" height="14" rx="2" fill="var(--serie-a)"/><rect x="26" y="14" width="13" height="10" rx="2" fill="var(--serie-b)"/><rect x="46" y="28" width="13" height="10" rx="2" fill="var(--serie-a)"/><rect x="46" y="20" width="13" height="8" rx="2" fill="var(--serie-b)"/>'],
+  ['Qué te dicen los números', 'Leído en criollo, sobre tu simulación.',
+   '<circle cx="11" cy="11" r="4" fill="var(--serie-b)"/><rect x="21" y="9" width="38" height="4" rx="2" fill="var(--rule-2)"/><circle cx="11" cy="23" r="4" fill="var(--serie-b)"/><rect x="21" y="21" width="30" height="4" rx="2" fill="var(--rule-2)"/><circle cx="11" cy="35" r="4" fill="var(--serie-b)"/><rect x="21" y="33" width="34" height="4" rx="2" fill="var(--rule-2)"/>'],
+  ['El cronograma mes a mes', 'La tabla completa, cuota por cuota.',
+   '<rect x="4" y="6" width="56" height="34" rx="3" fill="none" stroke="var(--rule-2)" stroke-width="2"/><path d="M4 16 H60 M4 25 H60 M4 34 H60 M23 6 V40 M42 6 V40" stroke="var(--rule-2)" stroke-width="1.5"/><rect x="4" y="6" width="56" height="10" fill="var(--serie-b)" opacity=".28"/>'],
+  ['Descargarlo en Excel', 'Para llevárselo al banco o guardarlo.',
+   '<rect x="14" y="4" width="36" height="26" rx="3" fill="none" stroke="var(--rule-2)" stroke-width="2"/><path d="M32 12 V30 M25 24 l7 7 7 -7" stroke="var(--serie-b)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 40 H52" stroke="var(--rule-2)" stroke-width="3" stroke-linecap="round"/>'],
+  ['Comparar dos créditos', 'Banco A contra Banco B, por TCEA.',
+   '<rect x="2" y="10" width="21" height="28" rx="3" fill="var(--serie-a)" opacity=".55"/><rect x="41" y="4" width="21" height="34" rx="3" fill="var(--serie-b)"/><text x="32" y="26" font-size="10" font-weight="700" fill="var(--ink-3)" text-anchor="middle" font-family="var(--ff-ui)">vs</text>'],
+];
+
+function pintarVitrina() {
+  const lista = $('#pro-lista');
+  if (lista && !lista.dataset.listo) {
+    lista.innerHTML = FICHAS.map(([t, d, svg]) =>
+      `<div class="it"><svg viewBox="0 0 64 44" aria-hidden="true">${svg}</svg><b>${t}</b><span>${d}</span></div>`).join('');
+    lista.dataset.listo = '1';
+  }
+
+  const demo = $('#pro-demo');
+  if (demo && !demo.dataset.listo) {
+    const base = cronograma(EJEMPLO);
+    const plan = cronograma(Object.assign({}, EJEMPLO,
+      { puntuales: [{ mes: 6, monto: 20000 }, { mes: 12, monto: 20000 }] }));
+    const ahorro = base.totalInteres - plan.totalInteres;
+    demo.innerHTML = `<span class="eyebrow">Un ejemplo, calculado ahora mismo</span>
+      <p class="frase">Un crédito de <b>${money0(EJEMPLO.principal)}</b> a <b>12 %</b> anual en
+      <b>60 meses</b>. Si pagas a capital <b>${money0(20000)}</b> en el mes 6 y otros
+      <b>${money0(20000)}</b> en el mes 12, te ahorras <b>${money0(ahorro)}</b> en intereses y
+      terminas <b>${meses2texto(base.meses - plan.meses)}</b> antes.</p>
+      <p class="pie">Con tus cifras el número es otro — eso es exactamente lo que se abre al suscribirte.</p>`;
+    demo.dataset.listo = '1';
+  }
+
+  const cd = $('#cmp-demo');
+  if (cd && !cd.dataset.listo && typeof cfgDeOpcion === 'function') {
+    const [A, B] = OPCIONES.map(o => cronograma(cfgDeOpcion(o)));
+    const ganaB = B.desembolso < A.desembolso;
+    const g = ganaB ? B : A, pierde = ganaB ? A : B;
+    cd.innerHTML = `<span class="eyebrow">Un ejemplo, calculado ahora mismo</span>
+      <p class="frase">Un banco te pide <b>${money0(A.cuotaInicial)}</b> al mes y el otro
+      <b>${money0(B.cuotaInicial)}</b>. Con los seguros, los portes y el bono, el que de verdad
+      sale más barato es <b>el ${ganaB ? 'segundo' : 'primero'}</b>: te cuesta
+      <b>${money0(pierde.desembolso - g.desembolso)}</b> menos en total.</p>
+      <p class="pie">Casi nunca gana el de la cuota más baja. Por eso se compara por TCEA.</p>`;
+    cd.dataset.listo = '1';
+  }
+}
+
+function aplicarPremium() {
+  const pro = esPro();
+  $$('.premium').forEach(el => { el.hidden = !pro; });
+  const caja = $('#tarjeta-guardar');
+  if (caja) caja.hidden = !pro && !yo;
+  const m = $('#muro-premium'), mc = $('#muro-cmp');
+  if (m) m.hidden = pro;
+  if (mc) mc.hidden = pro;
+  if (!pro) pintarVitrina();
+  else requestAnimationFrame(() => { if (!$('#view-sim').hidden) dibujar(); else compararAhora(); });
+  refrescarBarra();
 }
 
 function pintarMuro() {
@@ -2212,10 +2373,10 @@ function pintarMuro() {
   if (!yo) {
     z.innerHTML = `
       <div class="muro">
-        <p class="lede">Entra con tu correo y guarda el crédito que acabas de simular. Después
-        podrás volver y ver cómo va, sin escribir los datos otra vez.</p>
+        <p class="lede">Crea tu cuenta con el correo —es gratis y toma medio minuto— y desde ahí
+        activas la suscripción.</p>
         <div><button type="button" id="muro-entrar"
-          style="background:var(--brand);border-color:var(--brand);color:var(--on-brand)">Entrar con mi correo</button></div>
+          style="background:var(--brand);border-color:var(--brand);color:var(--on-brand)">Crear mi cuenta</button></div>
       </div>`;
     $('#muro-entrar').addEventListener('click', abrirEntrar);
     return;
@@ -2248,7 +2409,9 @@ function pintarMuro() {
     return;
   }
 
-  // --- con cuenta pero sin pagar: el muro
+  // --- con cuenta pero sin pagar: la caja
+  $('#caja-titulo').textContent = 'Activa tu suscripción';
+  $('#caja-lede').textContent = 'Con esto se abre todo lo de arriba, con tus propias cifras.';
   const p = cuponPuesto || { precio: yo.precio, precioFinal: yo.precio, cupon: null };
   const conDescuento = p.precioFinal < p.precio;
   z.innerHTML = `
@@ -2561,6 +2724,7 @@ $('#grp-bien').hidden = document.querySelector('input[name=entrada]:checked').va
 $('#fld-monto').hidden = !$('#grp-bien').hidden;
 recalcular();
 compararAhora();
+aplicarPremium();
 $('#view-cmp').hidden = document.querySelector('input[name=vista]:checked').value === 'sim';
 $('#view-sim').hidden = !$('#view-cmp').hidden;
 
@@ -2568,6 +2732,15 @@ $('#view-sim').hidden = !$('#view-cmp').hidden;
 conectarCuenta();
 
 window.__sim = { cronograma, pmt, tem, tir, cuotaVigenteDe };
+// Puerta para las pruebas: solo se abre con el archivo local. En el sitio
+// publicado —que va por https— no existe, así que no sirve para saltarse nada.
+if (location.protocol === 'file:') {
+  Object.assign(window.__sim, { $, $$, aplicarPremium,
+    simularPagado: v => {
+      yo = v ? { correo: 'prueba@local', activo: true, venceEn: 2000000000, precio: 20, dosFactores: false } : null;
+      pintarMuro(); aplicarPremium();
+    } });
+}
 
 })();
 </script>
