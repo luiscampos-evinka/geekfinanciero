@@ -439,6 +439,10 @@ input[type=month]:focus,select:focus{outline:none;border-color:var(--brand);
 .pro .card-note{margin-top:12px;font-size:.85rem;color:var(--ink-3)}
 @media (max-width:430px){ .pro .rejilla{grid-template-columns:1fr 1fr} .pro .it svg{height:38px} }
 
+/* ---------- cuando el servidor no contesta ---------- */
+body.sin-red .resumen{background:var(--warn-soft)}
+body.sin-red .cifras .v{opacity:.45}
+
 /* ---------- barra flotante ---------- */
 .barra{
   position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(0);
@@ -1173,188 +1177,13 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
    1. MOTOR FINANCIERO
    ============================================================ */
 
-const EPS = 0.005;          // un medio céntimo: por debajo, la deuda está pagada
+/* El motor financiero YA NO ESTÁ AQUÍ. Vive en el servidor
+   (api/src/motor.js) porque es lo que se cobra: al navegador solo le bajan
+   los números ya calculados, y solo los que le corresponden según su
+   suscripción. Esto de abajo es la única constante que necesita la interfaz
+   para acotar lo que se escribe en los campos. */
+
 const MAX_MESES = 600;      // tope duro de 50 años
-
-/** Tasa efectiva mensual a partir de la anual, con capitalización. */
-const tem = tea => Math.pow(1 + tea, 1 / 12) - 1;
-
-/** Cuota del sistema francés. */
-function pmt(i, n, pv) {
-  if (n <= 0) return pv;
-  if (i <= 0) return pv / n;
-  return pv * i / (1 - Math.pow(1 + i, -n));
-}
-
-/** Cuota del sistema francés dejando un saldo final (cuota balón) sin pagar. */
-function pmtBalon(i, n, pv, balon) {
-  if (n <= 0) return pv;
-  const fv = Math.max(0, balon || 0);
-  if (i <= 0) return Math.max(0, pv - fv) / n;
-  return i * (pv - fv * Math.pow(1 + i, -n)) / (1 - Math.pow(1 + i, -n));
-}
-
-/** Mes del calendario (1-12) de la cuota número `k`, contando desde la fecha de inicio. */
-function mesCalendario(inicio, k) {
-  return ((inicio.mes - 1 + k) % 12) + 1;
-}
-function fechaDeCuota(inicio, k) {
-  const total = (inicio.mes - 1) + k;
-  return { anio: inicio.anio + Math.floor(total / 12), mes: (total % 12) + 1 };
-}
-
-/**
- * Construye el cronograma completo.
- * cfg: {principal, tea, meses, desg, portes, seguroBien, comision, balon,
- *       gracia:{meses,tipo:'parcial'|'total'}|null, dobleCuota:bool, inicio:{anio,mes},
- *       puntuales:[{mes,monto}], mensual:{monto,desde,hasta}|null,
- *       compra:{mes,tea,plazo,costo,financiar}|null, modo:'plazo'|'cuota'}
- */
-function cronograma(cfg) {
-  const rows = [];
-  let i = tem(cfg.tea);
-  const iDesg = tem(cfg.desg);
-  const gastosMes = (cfg.portes || 0) + (cfg.seguroBien || 0);
-  const inicio = cfg.inicio || { anio: 2026, mes: 1 };
-  const balon = Math.max(0, cfg.balon || 0);
-  let saldo = cfg.principal;
-  let mes = 0;
-  let mesCompra = null;
-
-  // ---- periodo de gracia: primero, y no consume plazo
-  const gr = (cfg.gracia && cfg.gracia.meses > 0) ? cfg.gracia : null;
-  if (gr) {
-    const n = Math.min(gr.meses, MAX_MESES);
-    for (let g = 0; g < n && saldo > EPS; g++) {
-      mes++;
-      const saldoIni = saldo;
-      const interes = saldoIni * i;
-      const desgravamen = saldoIni * iDesg;
-      // gracia parcial: pagas solo el interés. gracia total: no pagas y se capitaliza.
-      const cuotaMes = gr.tipo === 'total' ? 0 : interes;
-      if (gr.tipo === 'total') saldo = saldoIni + interes;
-      rows.push({
-        mes, fecha: fechaDeCuota(inicio, mes - 1), saldoIni, cuota: cuotaMes,
-        interes, amort: 0, extra: 0, desgravamen, saldoFin: saldo, gracia: true
-      });
-    }
-  }
-
-  const mesesAmort = Math.max(1, cfg.meses);
-  let finMes = mes + mesesAmort;             // mes en que debería terminar
-  let cuota = pmtBalon(i, mesesAmort, saldo, balon);
-  const cuotaInicial = cuota;
-
-  const puntualesPorMes = new Map();
-  for (const p of (cfg.puntuales || [])) {
-    if (p.monto > 0 && p.mes >= 1) puntualesPorMes.set(p.mes, (puntualesPorMes.get(p.mes) || 0) + p.monto);
-  }
-
-  while (saldo > EPS && mes < MAX_MESES) {
-    mes++;
-
-    // La compra de deuda ocurre al inicio del mes: la nueva entidad paga el saldo.
-    if (cfg.compra && mes === cfg.compra.mes && mesCompra === null) {
-      mesCompra = mes;
-      if (cfg.compra.financiar) saldo += cfg.compra.costo;
-      i = tem(cfg.compra.tea);
-      finMes = mes - 1 + Math.max(1, cfg.compra.plazo);
-      cuota = pmtBalon(i, cfg.compra.plazo, saldo, 0);
-    }
-
-    const saldoIni = saldo;
-    const interes = saldoIni * i;
-    const desgravamen = saldoIni * iDesg;
-
-    // Con cuota balón, el último mes se paga todo lo que queda.
-    const ultima = balon > 0 && mes >= finMes;
-    const cuotaMes = ultima ? saldoIni + interes : Math.min(cuota, saldoIni + interes);
-    let amort = cuotaMes - interes;
-
-    let extra = 0;
-    if (cfg.mensual && mes >= cfg.mensual.desde && mes <= cfg.mensual.hasta) extra += cfg.mensual.monto;
-    if (puntualesPorMes.has(mes)) extra += puntualesPorMes.get(mes);
-    // Doble cuota: en julio y diciembre se paga una cuota extra que va íntegra a capital.
-    const mesCal = mesCalendario(inicio, mes - 1);
-    const esDoble = cfg.dobleCuota && (mesCal === 7 || mesCal === 12) && !ultima;
-    if (esDoble) extra += cuota;
-
-    extra = Math.max(0, Math.min(extra, saldoIni - amort));
-
-    amort += extra;
-    const saldoFin = Math.max(0, saldoIni - amort);
-
-    rows.push({
-      mes, fecha: fechaDeCuota(inicio, mes - 1), saldoIni, cuota: cuotaMes, interes,
-      amort: amort - extra, extra, desgravamen, saldoFin,
-      compra: mes === mesCompra, doble: esDoble, balon: ultima
-    });
-
-    saldo = saldoFin;
-
-    // Reducir cuota: se recalcula sobre el plazo que queda, manteniendo la fecha final.
-    if (cfg.modo === 'cuota' && extra > 0 && saldo > EPS) {
-      const restantes = finMes - mes;
-      cuota = restantes > 0 ? pmtBalon(i, restantes, saldo, balon) : saldo;
-    }
-  }
-
-  // ---- totales
-  let totalInteres = 0, totalDesg = 0, totalCuotas = 0, totalExtra = 0;
-  for (const r of rows) {
-    totalInteres += r.interes; totalDesg += r.desgravamen;
-    totalCuotas += r.cuota;    totalExtra += r.extra;
-  }
-  const gastosTotales = gastosMes * rows.length;
-  const costoCompra = (cfg.compra && mesCompra !== null && !cfg.compra.financiar) ? cfg.compra.costo : 0;
-  const desembolso = totalCuotas + totalExtra + totalDesg + gastosTotales + (cfg.comision || 0) + costoCompra;
-
-  // ---- TCEA: TIR mensual de los flujos reales, anualizada
-  const flujos = [cfg.principal - (cfg.comision || 0)];
-  rows.forEach(r => {
-    let pago = r.cuota + r.extra + r.desgravamen + gastosMes;
-    if (r.compra && !cfg.compra.financiar) pago += cfg.compra.costo;
-    flujos.push(-pago);
-  });
-  const tirM = tir(flujos);
-  const tcea = isNaN(tirM) ? NaN : Math.pow(1 + tirM, 12) - 1;
-
-  return {
-    rows, cuotaInicial,
-    cuotaFinal: rows.length ? rows[rows.length - 1].cuota : 0,
-    cuotaVigente: cuotaVigenteDe(rows),
-    meses: rows.length,
-    mesesGracia: gr ? Math.min(gr.meses, MAX_MESES) : 0,
-    totalInteres, totalDesg, totalCuotas, totalExtra,
-    gastosMens: gastosTotales, desembolso, tcea, mesCompra, balon
-  };
-}
-
-/** La cuota que realmente estarás pagando: ignora la gracia y el pago residual final. */
-function cuotaVigenteDe(rows) {
-  const utiles = rows.filter(r => !r.gracia);
-  if (!utiles.length) return rows.length ? rows[0].cuota : 0;
-  for (let k = utiles.length - 1; k >= 0; k--) {
-    if (utiles[k].saldoIni > EPS) {
-      if (k > 0 && utiles[k].cuota < utiles[k - 1].cuota * 0.9) continue;
-      return utiles[k].cuota;
-    }
-  }
-  return utiles[0].cuota;
-}
-
-/** TIR por bisección: robusta y suficiente para flujos de crédito. */
-function tir(flujos) {
-  const van = r => flujos.reduce((s, f, k) => s + f / Math.pow(1 + r, k), 0);
-  let lo = -0.9999, hi = 3, vlo = van(lo), vhi = van(hi);
-  if (!isFinite(vlo) || !isFinite(vhi) || vlo * vhi > 0) return NaN;
-  for (let k = 0; k < 300; k++) {
-    const mid = (lo + hi) / 2, v = van(mid);
-    if (v === 0) return mid;
-    if (vlo * v < 0) { hi = mid; vhi = v; } else { lo = mid; vlo = v; }
-  }
-  return (lo + hi) / 2;
-}
 
 /* ============================================================
    2. FORMATO
@@ -1555,12 +1384,12 @@ function pintarAmortizaciones() {
         aria-label="Monto de la amortización ${k + 1}" value="${a.monto}"></div>
       <button type="button" class="no-print" aria-label="Quitar la amortización ${k + 1}">✕</button>`;
     const [im, ia] = row.querySelectorAll('input');
-    im.addEventListener('input', () => { a.mes = Math.max(1, Math.round(parseFloat(im.value) || 1)); recalcular(); });
-    ia.addEventListener('input', () => { a.monto = Math.max(0, parseFloat(ia.value) || 0); recalcular(); });
+    im.addEventListener('input', () => { a.mes = Math.max(1, Math.round(parseFloat(im.value) || 1)); recalcularPronto(); });
+    ia.addEventListener('input', () => { a.monto = Math.max(0, parseFloat(ia.value) || 0); recalcularPronto(); });
     row.querySelector('button').addEventListener('click', () => {
       amortizaciones.splice(k, 1);
       if (!amortizaciones.length) amortizaciones.push({ mes: 6, monto: 0 });
-      pintarAmortizaciones(); recalcular();
+      pintarAmortizaciones(); recalcularPronto();
     });
     cont.appendChild(row);
   });
@@ -1615,195 +1444,9 @@ function leerConfig() {
 }
 
 /** Describe el plan del usuario como se lo contaría una persona. */
-function describirPlan(cfg) {
-  const partes = [];
-  const p = cfg.plan.puntuales.filter(a => a.monto > 0);
-  if (p.length === 1) partes.push(`amortizas <b>${money0(p[0].monto)}</b> en el mes ${p[0].mes}`);
-  else if (p.length > 1) {
-    const lista = p.map(a => `<b>${money0(a.monto)}</b> en el mes ${a.mes}`);
-    partes.push('amortizas ' + lista.slice(0, -1).join(', ') + ' y ' + lista[lista.length - 1]);
-  }
-  if (cfg.plan.mensual && cfg.plan.mensual.monto > 0) {
-    partes.push(`pones <b>${money0(cfg.plan.mensual.monto)}</b> extra cada mes`);
-  }
-  if (cfg.plan.compra) {
-    partes.push(`en el mes ${cfg.plan.compra.mes} otra entidad te compra la deuda al <b>${pct(cfg.plan.compra.tea)}</b>`);
-  }
-  if (!partes.length) return null;
-  return partes.length === 1 ? partes[0] : partes.slice(0, -1).join(', ') + ' y ' + partes[partes.length - 1];
-}
-
-/* ============================================================
-   5. LECTURA EN CRIOLLO — reglas sobre la data ya simulada
-   ============================================================ */
-
-function insights(base, plan, cfg) {
-  const out = [];
-  const hayPlan = plan.desembolso !== base.desembolso || plan.meses !== base.meses;
-
-  const peso = base.totalInteres / Math.max(1, cfg.base.principal);
-  out.push({
-    tono: peso >= 0.5 ? 'warn' : 'neutro',
-    mark: nf(peso * 100, 0) + '%',
-    titulo: peso >= 1
-      ? 'Vas a devolver más en intereses que la plata que te prestaron'
-      : 'Cuánto pesan los intereses sobre lo que te prestaron',
-    texto: `Por cada <b>${money0(100)}</b> que te prestan devuelves <b>${money(100 * (1 + peso))}</b>. ` +
-           `Sobre <b>${money0(cfg.base.principal)}</b> al ${nf(cfg.base.tea * 100, 2)} % en ` +
-           `${meses2texto(cfg.base.meses)}, los intereses suman <b>${money0(base.totalInteres)}</b>. ` +
-           `Lo que más mueve esa cifra es el plazo, y el plazo sí lo controlas tú.`
-  });
-
-  if (isFinite(base.tcea)) {
-    const gap = base.tcea - cfg.base.tea;
-    if (gap > 0.0005) {
-      out.push({
-        tono: gap >= 0.015 ? 'warn' : 'neutro',
-        mark: '+' + nf(gap * 100, 1),
-        titulo: 'Tu tasa real no es la que te ofrecieron',
-        texto: `Te venden <b>${pct(cfg.base.tea)}</b> de TEA, pero sumando el desgravamen, los portes y ` +
-               `las comisiones tu costo real es <b>${pct(base.tcea)}</b> — <b>${nf(gap * 100, 2)}</b> puntos ` +
-               `más arriba. Cuando compares dos bancos, pide siempre la TCEA: es la única que incluye todo.`
-      });
-    } else {
-      out.push({
-        tono: 'neutro', mark: '=',
-        titulo: 'Tu costo real coincide con la tasa que pusiste',
-        texto: `No cargaste desgravamen, portes ni comisión, así que sale igual. En un crédito de verdad ` +
-               `casi siempre hay algo de eso: agrégalo arriba y verás cuánto sube tu costo.`
-      });
-    }
-  }
-
-  const cruce = base.rows.findIndex(r => r.amort > r.interes);
-  if (cruce > 0) {
-    const antes = base.rows.slice(0, cruce).reduce((s, r) => s + r.interes, 0);
-    out.push({
-      tono: 'neutro', mark: 'mes ' + (cruce + 1),
-      titulo: `Recién en el mes ${cruce + 1} tu cuota empieza a bajar más deuda que intereses`,
-      texto: `Hasta ese mes ya habrás entregado <b>${money0(antes)}</b> solo en intereses. Por eso amortizar ` +
-             `temprano vale mucho más que amortizar tarde: al inicio casi toda tu cuota es alquiler del ` +
-             `dinero, no es tu deuda bajando.`
-    });
-  }
-
-  // --- lo que cuesta la cuota balón, medido contra el mismo crédito sin ella
-  if (cfg.base.balon > 0) {
-    const sinBalon = cronograma(Object.assign({}, cfg.base, { balon: 0 }));
-    const masIntereses = base.totalInteres - sinBalon.totalInteres;
-    const menosCuota = sinBalon.cuotaInicial - base.cuotaInicial;
-    out.push({
-      tono: 'warn', mark: 'balón',
-      titulo: `La cuota balón te alivia ${money(menosCuota)} al mes y te cuesta ${money0(masIntereses)}`,
-      texto: `Pagas <b>${money(base.cuotaInicial)}</b> al mes en vez de <b>${money(sinBalon.cuotaInicial)}</b>, ` +
-             `pero al final te espera una cuota de <b>${money0(cfg.base.balon)}</b> y en total pagas ` +
-             `<b>${money0(masIntereses)}</b> más en intereses. Es más caro porque durante todo el crédito ` +
-             `le debes más al banco. Pregúntate si vas a tener esa plata el último mes — si no, te tocará ` +
-             `refinanciarla y pagar intereses otra vez.`
-    });
-  }
-
-  // --- lo que cuesta el periodo de gracia
-  if (base.mesesGracia > 0) {
-    const sinGracia = cronograma(Object.assign({}, cfg.base, { gracia: null }));
-    const costo = base.totalInteres - sinGracia.totalInteres;
-    const total = cfg.base.gracia.tipo === 'total';
-    out.push({
-      tono: 'warn', mark: base.mesesGracia + 'm',
-      titulo: `Esos ${plural(base.mesesGracia, 'mes', 'meses')} de gracia te cuestan ${money0(costo)}`,
-      texto: total
-        ? `Durante la gracia no pagas nada, pero los intereses se van sumando a la deuda: al terminar ` +
-          `debes <b>${money0(base.rows[base.mesesGracia - 1].saldoFin)}</b>, más de lo que te prestaron. ` +
-          `Y el crédito se estira a ${meses2texto(base.meses)}.`
-        : `Durante la gracia pagas solo intereses, así que tu deuda no baja ni un sol en ` +
-          `${plural(base.mesesGracia, 'mes', 'meses')}. El crédito se estira a ${meses2texto(base.meses)} ` +
-          `y esos intereses son plata que no recuperas.`
-    });
-  }
-
-  if (hayPlan) {
-    const ahorro = base.totalInteres - plan.totalInteres;
-    const aportado = plan.totalExtra;
-
-    if (aportado > 0 && ahorro > 0) {
-      const porSol = ahorro / aportado;
-      out.push({
-        tono: 'good', mark: '×' + nf(1 + porSol, 2),
-        titulo: 'Cada sol que amortizas te devuelve más de un sol',
-        texto: `Pones <b>${money0(aportado)}</b> de tu bolsillo y dejas de pagar <b>${money0(ahorro)}</b> en ` +
-               `intereses: <b>${money(porSol)}</b> de ahorro por cada sol amortizado. Amortizar rinde lo ` +
-               `mismo que la tasa de tu crédito —<b>${pct(cfg.base.tea)}</b>— sin riesgo y sin impuestos. ` +
-               `Compáralo con lo que te paga el banco por un depósito a plazo antes de decidir dónde pones esa plata.`
-      });
-    }
-
-    const otro = cronograma(Object.assign({}, cfg.plan, { modo: cfg.plan.modo === 'plazo' ? 'cuota' : 'plazo' }));
-    const esPlazo = cfg.plan.modo === 'plazo';
-    const ahorroOtro = base.totalInteres - otro.totalInteres;
-    const dif = Math.abs(ahorro - ahorroOtro);
-    if (dif > 1) {
-      const gana = ahorro > ahorroOtro;
-      out.push({
-        tono: gana ? 'good' : 'warn',
-        mark: gana ? '✓' : '!',
-        titulo: gana
-          ? `Elegiste bien: «${esPlazo ? 'terminar antes' : 'pagar menos cada mes'}» te ahorra más`
-          : `«${esPlazo ? 'Pagar menos cada mes' : 'Terminar antes'}» te ahorraría ${money0(dif)} más`,
-        texto: `Con la misma plata amortizada, <b>terminar antes</b> ahorra ` +
-               `<b>${money0(esPlazo ? ahorro : ahorroOtro)}</b> y <b>pagar menos cada mes</b> ahorra ` +
-               `<b>${money0(esPlazo ? ahorroOtro : ahorro)}</b>. Terminar antes casi siempre ahorra más ` +
-               `porque matas meses enteros de intereses. La pregunta no es cuál ahorra más, sino si ` +
-               `necesitas ese aire mensual hoy.`
-      });
-    }
-
-    if (cfg.plan.puntuales.some(p => p.monto > 0)) {
-      const tarde = cronograma(Object.assign({}, cfg.plan, {
-        puntuales: cfg.plan.puntuales.map(p => ({ mes: p.mes + 12, monto: p.monto }))
-      }));
-      const costo = tarde.totalInteres - plan.totalInteres;
-      if (costo > 1) {
-        out.push({
-          tono: 'warn', mark: '1 año',
-          titulo: 'Dejarlo para el próximo año te cuesta plata',
-          texto: `Si hicieras exactamente las mismas amortizaciones doce meses más tarde, pagarías ` +
-                 `<b>${money0(costo)}</b> más en intereses. Ese es el precio de postergarlo.`
-        });
-      }
-    }
-
-    if (cfg.plan.compra) {
-      const c = cfg.plan.compra;
-      const solo = cronograma(Object.assign({}, cfg.base, { compra: c }));
-      const gana = base.totalInteres + base.gastosMens - (solo.totalInteres + solo.gastosMens + (c.financiar ? 0 : c.costo));
-      const alarga = solo.meses > base.meses;
-      out.push({
-        tono: gana > 0 && !alarga ? 'good' : 'warn',
-        mark: gana > 0 ? '✓' : '✕',
-        titulo: gana > 0
-          ? `Que te compren la deuda te ahorra ${money0(gana)}`
-          : `Que te compren la deuda te cuesta ${money0(Math.abs(gana))} más`,
-        texto: `Bajar de <b>${pct(cfg.base.tea)}</b> a <b>${pct(c.tea)}</b> en el mes ${c.mes} ` +
-               (c.costo > 0 ? `con <b>${money0(c.costo)}</b> de gastos ` : 'sin gastos de operación ') +
-               `deja tu cuota en <b>${money(solo.cuotaVigente)}</b>` +
-               (alarga
-                 ? ` pero estira el crédito a ${meses2texto(solo.meses)} en vez de ${meses2texto(base.meses)}. ` +
-                   `Ojo con eso: una cuota más baja con más meses puede salir más cara aunque la tasa haya bajado.`
-                 : ` y terminas en ${meses2texto(solo.meses)}. Antes de firmar, pregunta a tu banco actual ` +
-                   `si te cobra penalidad por pagar antes: ese costo no está acá salvo que lo pongas en ` +
-                   `«gastos de la operación».`)
-      });
-    }
-  } else {
-    out.push({
-      tono: 'neutro', mark: '→',
-      titulo: 'Todavía no pusiste ninguna amortización',
-      texto: `Prende una de las tres opciones del paso 2 y acá vas a ver cuánto te ahorras y cuántos ` +
-             `meses te quitas de encima.`
-    });
-  }
-  return out;
-}
+/* describirPlan() e insights() también viven en el servidor: son la lectura
+   en criollo de la simulación, y eso es parte de lo que se paga. Aquí solo
+   queda el pintor, que recibe la lista ya redactada. */
 
 function pintarInsights(cont, lista) {
   cont.innerHTML = lista.map(i => `
@@ -1817,96 +1460,94 @@ function pintarInsights(cont, lista) {
    6. RENDER DEL SIMULADOR
    ============================================================ */
 
-let ultimo = null;
+/**
+ * Le pide las cuentas al servidor y pinta lo que vuelva.
+ *
+ * El navegador ya no calcula nada: arma la configuración desde el formulario,
+ * la manda, y recibe los números —y los textos— hechos. Si no hay suscripción,
+ * el servidor sencillamente no manda la parte de pago.
+ */
+let ultimo = null;          // { cfg, r } — r es la respuesta del servidor
+// Un contador POR ENDPOINT: si los dos comparten uno, cada petición anula la
+// respuesta de la otra y no se pinta nada. Pasó, y costó encontrarlo.
+let pidiendo = 0;
+let pidiendoCmp = 0;
 
-function recalcular() {
+async function recalcular() {
   const cfg = leerConfig();
-  const base = cronograma(cfg.base);
-  // Lo de pago no se calcula si no está pagado. Así, aunque alguien le quite el
-  // «hidden» a las secciones desde el inspector, no hay nada escrito que leer.
-  const plan = esPro() ? cronograma(cfg.plan) : null;
-  ultimo = { cfg, base, plan };
+  const mio = ++pidiendo;
+  const { ok, cuerpo } = await api('/api/simular', {
+    method: 'POST',
+    body: JSON.stringify({ moneda: CUR, base: cfg.base, plan: cfg.plan }),
+  });
+  // Mientras se esperaba, alguien siguió escribiendo: esta respuesta ya no vale.
+  if (mio !== pidiendo) return;
+  if (!ok || !cuerpo || !cuerpo.gratis) return avisarSinCuentas();
+  ultimo = { cfg, r: cuerpo };
+  sinRed(false);
+  pintarSimulacion();
+  guardar();
+}
 
-  // --- paso 1: la respuesta inmediata, en una frase
-  $('#resumen-credito').innerHTML = cfg.base.principal > 0
-    ? `<span>Tu cuota sería</span> <b class="num">${money(base.cuotaInicial)}</b>
-       <span>al mes durante</span> <b class="num">${meses2texto(cfg.base.meses)}</b>` +
-      (base.totalDesg > 0 ? `<span>, más unos ${money(base.rows[0].desgravamen)} de desgravamen el primer mes.</span>` : '<span>.</span>')
+/** Un aviso honesto en vez de números viejos que ya no corresponden. */
+function avisarSinCuentas() {
+  sinRed(true);
+  $('#resumen-credito').innerHTML =
+    '<span>No pudimos calcular: revisa tu conexión. Vuelve a intentarlo en un momento.</span>';
+  ['#o-total', '#o-int', '#o-tcea'].forEach(k => { $(k).textContent = '—'; });
+  ['#o-total-nota', '#o-int-pct', '#o-tcea-gap'].forEach(k => { $(k).textContent = ''; });
+  vaciarDePago();
+}
+function sinRed(hay) { document.body.classList.toggle('sin-red', !!hay); }
+
+function pintarSimulacion() {
+  if (!ultimo) return;
+  const { cfg, r } = ultimo, g = r.gratis;
+
+  // --- paso 1: lo que ve cualquiera
+  $('#resumen-credito').innerHTML = g.principal > 0
+    ? `<span>Tu cuota sería</span> <b class="num">${money(g.cuota)}</b>
+       <span>al mes durante</span> <b class="num">${meses2texto(g.meses)}</b>` +
+      (g.totalDesg > 0 ? `<span>, más unos ${money(g.desg1)} de desgravamen el primer mes.</span>` : '<span>.</span>')
     : '<span>Pon cuánto te prestan para empezar.</span>';
 
-  $('#o-total').textContent = money0(base.desembolso);
-  $('#o-total-nota').textContent = base.totalDesg > 0 ? `incluye ${money0(base.totalDesg)} de desgravamen` : 'cuota por cuota, hasta el final';
-  $('#o-int').textContent = money0(base.totalInteres);
-  $('#o-int-pct').textContent = cfg.base.principal > 0
-    ? `${nf(base.totalInteres / cfg.base.principal * 100, 0)} % de lo que te prestaron` : '';
-  $('#o-tcea').textContent = isFinite(base.tcea) ? pct(base.tcea) : '—';
-  const gap = base.tcea - cfg.base.tea;
+  $('#o-total').textContent = money0(g.desembolso);
+  $('#o-total-nota').textContent = g.totalDesg > 0
+    ? `incluye ${money0(g.totalDesg)} de desgravamen` : 'cuota por cuota, hasta el final';
+  $('#o-int').textContent = money0(g.totalInteres);
+  $('#o-int-pct').textContent = g.principal > 0
+    ? `${nf(g.totalInteres / g.principal * 100, 0)} % de lo que te prestaron` : '';
+  $('#o-tcea').textContent = g.tcea != null ? pct(g.tcea) : '—';
+  const gap = g.tcea != null ? g.tcea - cfg.base.tea : NaN;
   $('#o-tcea-gap').textContent = isFinite(gap) && gap > 0.0005
     ? `${nf(gap * 100, 2)} puntos sobre la tasa que te ofrecieron` : 'igual a la tasa que pusiste';
   $('#tile-tcea').classList.toggle('alerta', isFinite(gap) && gap >= 0.015);
-
   $('#hint-plazo').textContent = meses2texto(cfg.base.meses);
-  $('#hint-cd-plazo').textContent = cfg.plan.compra
-    ? `Le quedaban ${Math.max(0, cfg.base.meses - cfg.plan.compra.mes + 1)} meses`
-    : '';
 
-  // --- paso 3: la respuesta (solo con suscripción)
-  if (!plan) { vaciarDePago(); guardar(); return; }
+  // --- paso 3: solo llega si la suscripción está al día
+  const pr = r.premium;
+  if (!pr) { $('#hint-cd-plazo').textContent = ''; return vaciarDePago(); }
 
-  const ahorro = base.totalInteres - plan.totalInteres;
-  const ahorroMeses = base.meses - plan.meses;
-  const bajaCuota = base.cuotaInicial - plan.cuotaVigente;
-  const desc = describirPlan(cfg);
-
-  let frase;
-  if (!desc) {
-    frase = `Prende una opción en el paso 2 y acá te digo, en una frase, qué pasa con tu crédito.`;
-  } else if (ahorroMeses > 0) {
-    frase = `Si ${desc}, terminas de pagar <b>${meses2texto(ahorroMeses)} antes</b> —en el mes ${plan.meses} ` +
-            `en vez del ${base.meses}— y te ahorras <b>${money0(ahorro)}</b> en intereses.`;
-  } else if (bajaCuota > 0.5) {
-    frase = `Si ${desc}, tu cuota baja de <b>${money(base.cuotaInicial)}</b> a <b>${money(plan.cuotaVigente)}</b> ` +
-            `al mes y te ahorras <b>${money0(ahorro)}</b> en intereses.`;
-  } else {
-    frase = `Si ${desc}, te ahorras <b>${money0(Math.max(0, ahorro))}</b> en intereses.`;
-  }
-  $('#r-frase').innerHTML = frase;
-
+  $('#hint-cd-plazo').textContent = pr.hintCompra;
+  $('#r-frase').innerHTML = pr.frase;
   const big = $('#h-ahorro');
-  big.textContent = ahorro > 0.5 ? money0(ahorro) : money0(0);
-  big.classList.toggle('cero', !(ahorro > 0.5));
-  $('#h-pie').innerHTML = ahorro > 0.5
-    ? `de los ${money0(base.totalInteres)} que ibas a pagarle al banco solo por prestarte.`
-    : `Todavía no hay ahorro que mostrar.`;
+  big.textContent = pr.hAhorro;
+  big.classList.toggle('cero', !pr.hay);
+  $('#h-pie').innerHTML = pr.hPie;
+  $('#d-cuota').innerHTML = pr.dCuota;
+  $('#d-plazo').innerHTML = pr.dPlazo;
+  $('#d-int').innerHTML = pr.dInt;
+  $('#d-total').innerHTML = pr.dTotal;
 
-  const flecha = (a, b, extra) =>
-    `<span class="antes">${a}</span> <span class="flecha">→</span> ${b}${extra ? `<small>${extra}</small>` : ''}`;
-  $('#d-cuota').innerHTML = Math.abs(bajaCuota) > 0.5
-    ? flecha(money(base.cuotaInicial), money(plan.cuotaVigente), `−${nf(Math.abs(bajaCuota))}`)
-    : money(base.cuotaInicial);
-  $('#d-plazo').innerHTML = ahorroMeses > 0
-    ? flecha(base.meses + ' meses', plan.meses + ' meses', `−${ahorroMeses}`)
-    : base.meses + ' meses';
-  $('#d-int').innerHTML = ahorro > 0.5
-    ? flecha(money0(base.totalInteres), money0(plan.totalInteres), `−${nf(ahorro, 0)}`)
-    : money0(base.totalInteres);
-  $('#d-total').innerHTML = Math.abs(base.desembolso - plan.desembolso) > 0.5
-    ? flecha(money0(base.desembolso), money0(plan.desembolso))
-    : money0(base.desembolso);
-
-  // --- barra flotante
   const barra = $('#barra');
-  barra.dataset.hay = ahorro > 0.5 ? '1' : '';
-  $('#barra-v').textContent = money0(Math.max(0, ahorro));
-  $('#barra-s').textContent = ahorroMeses > 0
-    ? `· ${meses2texto(ahorroMeses)} menos`
-    : (bajaCuota > 0.5 ? `· cuota de ${money(plan.cuotaVigente)}` : '');
+  barra.dataset.hay = pr.hay ? '1' : '';
+  $('#barra-v').textContent = pr.barraV;
+  $('#barra-s').textContent = pr.barraS;
   refrescarBarra();
 
   dibujar();
-  pintarInsights($('#insights'), insights(base, plan, cfg));
+  pintarInsights($('#insights'), pr.insights);
   pintarTabla();
-  guardar();
 }
 
 /** Deja en blanco todo lo que es de pago. Se llama cuando no hay suscripción. */
@@ -1921,39 +1562,45 @@ function vaciarDePago() {
   refrescarBarra();
 }
 
-function serieSaldo(res) {
-  const d = [{ x: 0, y: res.rows.length ? res.rows[0].saldoIni : 0 }];
-  res.rows.forEach(r => d.push({ x: r.mes, y: r.saldoFin }));
-  return d;
-}
+/* Las series y las filas llegan del servidor en formato compacto: aquí solo
+   se traducen a lo que esperan el dibujante y la tabla. */
+const puntos = serie => serie.map(([x, y]) => ({ x, y }));
+const FL = { gracia: 1, doble: 2, balon: 4, compra: 8 };
+const dePago = () => (ultimo && ultimo.r && ultimo.r.premium) || null;
 
 function dibujar() {
-  if (!ultimo || !ultimo.plan) return;
-  const { base, plan } = ultimo;
+  const p = dePago();
+  if (!p) return;
   lineChart($('#chart-saldo'), [
-    { nombre: 'Como ibas', color: css('--serie-a'), etiqueta: 'Como ibas', datos: serieSaldo(base) },
-    { nombre: 'Amortizando', color: css('--serie-b'), etiqueta: 'Amortizando', datos: serieSaldo(plan), relleno: true }
+    { nombre: 'Como ibas', color: css('--serie-a'), etiqueta: 'Como ibas', datos: puntos(p.serieBase) },
+    { nombre: 'Amortizando', color: css('--serie-b'), etiqueta: 'Amortizando', datos: puntos(p.seriePlan), relleno: true },
   ]);
   stackedBars($('#chart-comp'), [
-    { nombre: 'Como ibas', capital: ultimo.cfg.base.principal, interes: base.totalInteres,
+    { nombre: 'Como ibas', capital: p.barras.capital, interes: p.barras.interesBase,
       color: css('--serie-a'), suave: css('--serie-a-soft') },
-    { nombre: 'Amortizando', capital: ultimo.cfg.base.principal, interes: plan.totalInteres,
-      color: css('--serie-b'), suave: css('--serie-b-soft') }
+    { nombre: 'Amortizando', capital: p.barras.capital, interes: p.barras.interesPlan,
+      color: css('--serie-b'), suave: css('--serie-b-soft') },
   ]);
 }
 
 function pintarTabla() {
-  if (!ultimo || !ultimo.plan) return;
+  const p = dePago();
+  if (!p) return;
   const cual = document.querySelector('input[name=crono]:checked').value;
-  const res = cual === 'base' ? ultimo.base : ultimo.plan;
-  $('#tbl tbody').innerHTML = res.rows.map(r => `
-    <tr class="${r.extra > 0 ? 'paid' : ''}${r.compra ? ' buyout' : ''}">
-      <td>${r.mes} <span style="color:var(--ink-3)">${mesCorto(r.fecha)}</span>${r.gracia ? ' · gracia' : ''}${r.doble ? ' · doble' : ''}${r.balon ? ' · balón' : ''}${r.compra ? ' · te compran' : ''}</td>
-      <td>${nf(r.saldoIni)}</td><td>${nf(r.cuota)}</td><td>${nf(r.interes)}</td>
-      <td>${nf(r.amort)}</td>
-      <td class="${r.extra > 0 ? 'extra' : ''}">${r.extra > 0 ? nf(r.extra) : '—'}</td>
-      <td>${nf(r.desgravamen)}</td><td>${nf(r.saldoFin)}</td>
-    </tr>`).join('');
+  const filas = cual === 'base' ? p.filasBase : p.filas;
+  $('#tbl tbody').innerHTML = filas.map(f => {
+    const [mes, anio, mesCal, saldoIni, cuota, interes, amort, extra, desg, saldoFin, fl] = f;
+    const etiqueta = (fl & FL.gracia ? ' · gracia' : '') + (fl & FL.doble ? ' · doble' : '') +
+                     (fl & FL.balon ? ' · balón' : '') + (fl & FL.compra ? ' · te compran' : '');
+    return `
+    <tr class="${extra > 0 ? 'paid' : ''}${fl & FL.compra ? ' buyout' : ''}">
+      <td>${mes} <span style="color:var(--ink-3)">${mesCorto({ anio, mes: mesCal })}</span>${etiqueta}</td>
+      <td>${nf(saldoIni)}</td><td>${nf(cuota)}</td><td>${nf(interes)}</td>
+      <td>${nf(amort)}</td>
+      <td class="${extra > 0 ? 'extra' : ''}">${extra > 0 ? nf(extra) : '—'}</td>
+      <td>${nf(desg)}</td><td>${nf(saldoFin)}</td>
+    </tr>`;
+  }).join('');
 }
 
 /* ============================================================
@@ -2014,109 +1661,57 @@ function pintarFormsComparador() {
   $('#vs-forms').querySelectorAll('input[type=number]').forEach(inp => {
     inp.addEventListener('input', () => {
       OPCIONES[+inp.dataset.i][inp.dataset.f] = parseFloat(inp.value) || 0;
-      compararAhora();
+      compararPronto();
     });
   });
   $('#vs-forms').querySelectorAll('.cmp-nombre').forEach(inp => {
     inp.addEventListener('input', () => {
       OPCIONES[+inp.dataset.i].nombre = inp.value || `Opción ${OPCIONES[+inp.dataset.i].id.toUpperCase()}`;
-      compararAhora();
+      compararPronto();
     });
   });
 }
 
-function cfgDeOpcion(o) {
-  const inicial = o.precio * (o.inicialPct / 100);
-  return {
-    principal: Math.max(0, o.precio - inicial - o.bono),
-    tea: o.tea / 100, meses: Math.max(1, Math.round(o.plazo)),
-    desg: o.desg / 100, portes: o.portes, comision: o.comision,
-    puntuales: [], mensual: null, compra: null, modo: 'plazo'
+/* cfgDeOpcion() se fue al servidor con el resto del motor: convertir precio,
+   inicial y bono en lo que te prestan también es cálculo. */
+
+let ultimoCmp = null;
+
+async function compararAhora() {
+  const limpiar = () => {
+    ultimoCmp = null;
+    ['#cmp-verdict', '#cmp-insights', '#cmp-tbl tbody'].forEach(k => { const e = $(k); if (e) e.innerHTML = ''; });
+    const g = $('#chart-cmp'); if (g) g.innerHTML = '<div class="tip"></div>';
   };
+  if (!esPro()) return limpiar();
+
+  const mio = ++pidiendoCmp;
+  const { ok, cuerpo } = await api('/api/comparar', {
+    method: 'POST',
+    body: JSON.stringify({ moneda: CUR, opciones: OPCIONES }),
+  });
+  if (mio !== pidiendoCmp) return;
+  if (!ok || !cuerpo || cuerpo.error) return limpiar();
+  ultimoCmp = cuerpo;
+  pintarComparador();
 }
 
-function compararAhora() {
-  if (!esPro()) { const v = $('#cmp-verdict'), i = $('#cmp-insights'), g = $('#chart-cmp');
-    if (v) v.innerHTML = ''; if (i) i.innerHTML = '';
-    if (g) g.innerHTML = '<div class="tip"></div>';   // el .tip lo necesita lineChart
-    return; }
-  const cfgs = OPCIONES.map(cfgDeOpcion);
-  const res = cfgs.map(cronograma);
-
-  cfgs.forEach((c, k) => { const el = $('#cmp-fin-' + k); if (el) el.textContent = money(c.principal); });
-  $('#cmp-h-a').textContent = OPCIONES[0].nombre;
-  $('#cmp-h-b').textContent = OPCIONES[1].nombre;
-  $('#lg-a').textContent = OPCIONES[0].nombre;
-  $('#lg-b').textContent = OPCIONES[1].nombre;
-
-  const [A, B] = res, [ca, cb] = cfgs;
-  const fila = (etq, va, vb, fmt, menorEsMejor = true) => {
-    const mejorA = menorEsMejor ? va < vb : va > vb;
-    const igual = Math.abs(va - vb) < 0.005;
-    return `<tr><td>${etq}</td>
-      <td class="${igual ? '' : mejorA ? 'win' : 'lose'}">${fmt(va)}</td>
-      <td class="${igual ? '' : mejorA ? 'lose' : 'win'}">${fmt(vb)}</td>
-      <td>${igual ? '—' : fmt(Math.abs(va - vb))}</td></tr>`;
-  };
-
-  $('#cmp-tbl tbody').innerHTML = [
-    fila('Te prestan', ca.principal, cb.principal, money),
-    fila('Cuota de cada mes', A.cuotaInicial, B.cuotaInicial, money),
-    fila('Plazo', A.meses, B.meses, m => `${m} meses`),
-    fila('Intereses', A.totalInteres, B.totalInteres, money0),
-    fila('Desgravamen', A.totalDesg, B.totalDesg, money0),
-    fila('Sale de tu bolsillo', A.desembolso, B.desembolso, money0),
-    fila('Costo real (TCEA)', A.tcea, B.tcea, v => isFinite(v) ? pct(v) : '—')
-  ].join('');
-
-  const dif = A.desembolso - B.desembolso;
-  const gana = dif > 0 ? OPCIONES[1] : OPCIONES[0];
-  const pierde = dif > 0 ? OPCIONES[0] : OPCIONES[1];
-  const gT = dif > 0 ? B : A, pT = dif > 0 ? A : B;
-  $('#cmp-verdict').innerHTML = Math.abs(dif) < 1
-    ? `Las dos te cuestan prácticamente lo mismo: <b>${money0(A.desembolso)}</b>. Decide por el plazo o por la cuota.`
-    : `<b>${gana.nombre}</b> te sale <b>${money0(Math.abs(dif))}</b> más barata en total que ${pierde.nombre}` +
-      (gT.cuotaInicial > pT.cuotaInicial
-        ? `, aunque su cuota sea <b>${money(gT.cuotaInicial - pT.cuotaInicial)}</b> más alta cada mes. Sale más barata porque dura menos.`
-        : ` y encima su cuota mensual es más baja.`);
-
+/** Pinta la última respuesta que ya tenemos. No pide nada. */
+function pintarComparador() {
+  const cuerpo = ultimoCmp;
+  if (!cuerpo) return;
+  cuerpo.financiado.forEach((v, k) => { const el = $('#cmp-fin-' + k); if (el) el.textContent = v; });
+  $('#cmp-h-a').textContent = cuerpo.nombres[0];
+  $('#cmp-h-b').textContent = cuerpo.nombres[1];
+  $('#lg-a').textContent = cuerpo.nombres[0];
+  $('#lg-b').textContent = cuerpo.nombres[1];
+  $('#cmp-tbl tbody').innerHTML = cuerpo.tabla;
+  $('#cmp-verdict').innerHTML = cuerpo.veredicto;
   lineChart($('#chart-cmp'), [
-    { nombre: OPCIONES[0].nombre, color: css('--serie-a'), etiqueta: 'A', datos: serieSaldo(A) },
-    { nombre: OPCIONES[1].nombre, color: css('--serie-b'), etiqueta: 'B', datos: serieSaldo(B) }
+    { nombre: cuerpo.nombres[0], color: css('--serie-a'), etiqueta: 'A', datos: puntos(cuerpo.serieA) },
+    { nombre: cuerpo.nombres[1], color: css('--serie-b'), etiqueta: 'B', datos: puntos(cuerpo.serieB) },
   ]);
-
-  const ins = [];
-  const difCuota = A.cuotaInicial - B.cuotaInicial;
-  if (Math.abs(difCuota) > 0.5 && Math.sign(difCuota) === -Math.sign(dif)) {
-    ins.push({
-      tono: 'warn', mark: '!',
-      titulo: 'Acá la cuota más baja es el crédito más caro',
-      texto: `${difCuota > 0 ? OPCIONES[1].nombre : OPCIONES[0].nombre} tiene la cuota más baja ` +
-             `(<b>${money(Math.min(A.cuotaInicial, B.cuotaInicial))}</b>) pero termina costando ` +
-             `<b>${money0(Math.abs(dif))}</b> más. Es el efecto del plazo: cada mes de más es un mes más ` +
-             `pagando intereses. Por eso se compara por TCEA, no por cuota.`
-    });
-  }
-  if (isFinite(A.tcea) && isFinite(B.tcea) && Math.abs(A.tcea - B.tcea) > 0.0005) {
-    ins.push({
-      tono: 'good', mark: 'TCEA',
-      titulo: `${A.tcea < B.tcea ? OPCIONES[0].nombre : OPCIONES[1].nombre} tiene el costo real más bajo`,
-      texto: `<b>${pct(Math.min(A.tcea, B.tcea))}</b> contra <b>${pct(Math.max(A.tcea, B.tcea))}</b>. ` +
-             `La TCEA ya incluye desgravamen, portes y comisiones, así que es la comparación honesta. ` +
-             `Pídela por escrito: en Perú están obligados a dártela.`
-    });
-  }
-  const difBono = Math.abs(ca.principal - cb.principal);
-  if (difBono > 1) {
-    ins.push({
-      tono: 'neutro', mark: '↓',
-      titulo: `${ca.principal < cb.principal ? OPCIONES[0].nombre : OPCIONES[1].nombre} te presta ${money0(difBono)} menos`,
-      texto: `Un bono o una inicial más alta no solo baja lo que debes: baja también los intereses que ` +
-             `pagarías sobre esa plata durante todos los años del crédito. Por eso un bono de ` +
-             `<b>${money0(difBono)}</b> casi nunca vale exactamente <b>${money0(difBono)}</b> — vale más.`
-    });
-  }
-  pintarInsights($('#cmp-insights'), ins);
+  pintarInsights($('#cmp-insights'), cuerpo.insights);
 }
 
 /* ============================================================
@@ -2155,14 +1750,15 @@ function aplicarMoneda() {
 }
 
 function csv() {
-  if (!ultimo) return;
+  const p = dePago();
+  if (!p) return;
   const cual = document.querySelector('input[name=crono]:checked').value;
-  const res = cual === 'base' ? ultimo.base : ultimo.plan;
+  const filas = cual === 'base' ? p.filasBase : p.filas;
   const cab = ['Mes', 'Debes al empezar', 'Cuota', 'Interes', 'Capital', 'Extra a capital', 'Desgravamen', 'Te queda debiendo'];
-  const lineas = [cab.join(';')].concat(res.rows.map(r =>
-    [r.mes, r.saldoIni, r.cuota, r.interes, r.amort, r.extra, r.desgravamen, r.saldoFin]
+  const lineas = [cab.join(';')].concat(filas.map(f =>
+    [f[0], f[3], f[4], f[5], f[6], f[7], f[8], f[9]]
       .map((v, i) => i === 0 ? v : v.toFixed(2).replace('.', ',')).join(';')));
-  const blob = new Blob(['﻿' + lineas.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob(['\ufeff' + lineas.join('\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `cronograma-${cual === 'base' ? 'como-ibas' : 'amortizando'}.csv`;
@@ -2178,9 +1774,22 @@ function refrescarBarra() {
   b.hidden = !(sim && !heroVisible && b.dataset.hay === '1' && esPro());
 }
 
+/** Cada tecla no puede ser una petición: se espera a que la mano pare. */
+function conFreno(fn, ms = 320) {
+  let t = null;
+  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+const recalcularPronto = conFreno(recalcular);
+const compararPronto = conFreno(compararAhora);
+
+/** Repinta los gráficos con lo que ya se tiene. Cero peticiones. */
+function redibujar() {
+  if (!$('#view-sim').hidden) dibujar(); else pintarComparador();
+}
+
 function conectar() {
   $$('input[name=moneda]').forEach(r => r.addEventListener('change', () => {
-    aplicarMoneda(); pintarAmortizaciones(); recalcular(); compararAhora();
+    aplicarMoneda(); pintarAmortizaciones(); recalcularPronto(); compararPronto();
   }));
 
   $$('input[name=vista]').forEach(r => r.addEventListener('change', () => {
@@ -2188,39 +1797,39 @@ function conectar() {
     $('#view-sim').hidden = !sim;
     $('#view-cmp').hidden = sim;
     refrescarBarra();
-    if (sim) dibujar(); else compararAhora();
+    if (sim) dibujar(); else (ultimoCmp ? pintarComparador() : compararAhora());
   }));
 
   $$('input[name=entrada]').forEach(r => r.addEventListener('change', () => {
     const bien = document.querySelector('input[name=entrada]:checked').value === 'bien';
     $('#grp-bien').hidden = !bien;
     $('#fld-monto').hidden = bien;
-    recalcular();
+    recalcularPronto();
   }));
 
   // la cuota inicial se puede escribir en % o en soles: se sincronizan
   $('#f-inicial-pct').addEventListener('input', () => {
     $('#f-inicial-mto').value = Math.round(val('#f-precio') * val('#f-inicial-pct') / 100);
-    recalcular();
+    recalcularPronto();
   });
   $('#f-inicial-mto').addEventListener('input', () => {
     const p = val('#f-precio');
     $('#f-inicial-pct').value = p > 0 ? +(val('#f-inicial-mto') / p * 100).toFixed(2) : 0;
-    recalcular();
+    recalcularPronto();
   });
   $('#f-precio').addEventListener('input', () => {
     $('#f-inicial-mto').value = Math.round(val('#f-precio') * val('#f-inicial-pct') / 100);
-    recalcular();
+    recalcularPronto();
   });
 
   $$('#view-sim input').forEach(i => {
     if (['f-inicial-pct', 'f-inicial-mto', 'f-precio'].includes(i.id)) return;
     if (['crono', 'vista', 'moneda', 'entrada'].includes(i.name)) return;
-    i.addEventListener('input', recalcular);
-    i.addEventListener('change', recalcular);
+    i.addEventListener('input', recalcularPronto);
+    i.addEventListener('change', recalcularPronto);
   });
 
-  $$('#view-sim select').forEach(sl => sl.addEventListener('change', recalcular));
+  $$('#view-sim select').forEach(sl => sl.addEventListener('change', recalcularPronto));
 
   $$('input[name=crono]').forEach(r => r.addEventListener('change', pintarTabla));
 
@@ -2257,14 +1866,14 @@ function conectar() {
       ? document.documentElement.dataset.theme === 'dark'
       : matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.dataset.theme = oscuro ? 'light' : 'dark';
-    requestAnimationFrame(() => { dibujar(); compararAhora(); });
+    requestAnimationFrame(redibujar);
   });
 
   let pend = null;
   new ResizeObserver(() => {
     if (pend) cancelAnimationFrame(pend);
     pend = requestAnimationFrame(() => {
-      if (!$('#view-sim').hidden) dibujar(); else compararAhora();
+      redibujar();
     });
   }).observe($('#chart-saldo'));
 
@@ -2274,7 +1883,7 @@ function conectar() {
   }, { threshold: 0.25 }).observe($('#hero'));
 
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    requestAnimationFrame(() => { dibujar(); compararAhora(); });
+    requestAnimationFrame(redibujar);
   });
 }
 
@@ -2351,82 +1960,68 @@ const PRECIO_LISTA = 20;   // solo para mostrar: el cobro real lo fija el servid
    Lo que es de pago
    Gratis: el crédito en sí —cuánto te prestan, la cuota, la TCEA—.
    De pago: pagar a capital y todo lo que se desprende de ello, más el
-   comparador. La vitrina enseña el resultado con un ejemplo calculado
-   por este mismo motor, para que nadie compre a ciegas.
+   comparador. La vitrina enseña el resultado con un ejemplo que calcula el
+   servidor, para que nadie compre a ciegas.
+
+   Ojo: esto de aquí SOLO decide qué se pide y qué se pinta. Quien manda es el
+   servidor, que no envía la parte de pago si la suscripción no está al día.
    ------------------------------------------------------------------ */
 const esPro = () => !!(yo && yo.activo);
 
-const EJEMPLO = {
-  principal: 100000, tea: 0.12, meses: 60, desg: 0.0052, portes: 0, seguroBien: 0,
-  comision: 0, balon: 0, gracia: null, dobleCuota: false,
-  inicio: { anio: 2026, mes: 9 }, puntuales: [], mensual: null, compra: null, modo: 'plazo',
-};
+/* Las láminas del visor las calcula el SERVIDOR y llegan por /api/muestra:
+   son un ejemplo fijo que el navegador no puede tocar. Se enseñan borrosas
+   porque el borroso dice «hay algo aquí» mucho mejor que un hueco, y como son
+   del ejemplo, quitarles el desenfoque no revela los datos de nadie. */
 
-/* Las láminas del visor salen del EJEMPLO, nunca de las cifras de quien mira:
-   así se puede enseñar el producto de verdad sin regalar el cálculo propio.
-   Van borrosas porque el borroso dice «hay algo aquí» mucho mejor que un hueco. */
-let PLAN_EJ = null, BASE_EJ = null;
-const cfgEjemplo = () => ({
-  base: EJEMPLO,
-  plan: Object.assign({}, EJEMPLO, { puntuales: [{ mes: 6, monto: 20000 }, { mes: 12, monto: 20000 }] }),
-});
+let MUESTRA = null;
 
 const LAMINAS = [
   { tit: 'Cuánto te ahorras', sub: 'En soles y en meses, con tus propias cifras.', pinta(z) {
-      const ah = BASE_EJ.totalInteres - PLAN_EJ.totalInteres;
+      const p = MUESTRA.premium;
       z.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px;height:100%">
         <span style="font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)">Te ahorras en intereses</span>
-        <div style="font-family:var(--ff-num);font-weight:700;font-size:clamp(2rem,7vw,3.2rem);line-height:1;color:var(--serie-b)">${money0(ah)}</div>
+        <div style="font-family:var(--ff-num);font-weight:700;font-size:clamp(2rem,7vw,3.2rem);line-height:1;color:var(--serie-b)">${p.hAhorro}</div>
         <div style="display:flex;flex-direction:column;gap:10px;font-size:.92rem">
           <div style="display:flex;gap:10px"><span style="color:var(--ink-2)">Cuánto dura</span>
-            <b style="margin-left:auto;font-family:var(--ff-num)">${meses2texto(BASE_EJ.meses)} → ${meses2texto(PLAN_EJ.meses)}</b></div>
+            <b style="margin-left:auto;font-family:var(--ff-num)">${p.dPlazo}</b></div>
           <div style="display:flex;gap:10px"><span style="color:var(--ink-2)">Intereses</span>
-            <b style="margin-left:auto;font-family:var(--ff-num)">${money0(BASE_EJ.totalInteres)} → ${money0(PLAN_EJ.totalInteres)}</b></div>
+            <b style="margin-left:auto;font-family:var(--ff-num)">${p.dInt}</b></div>
           <div style="display:flex;gap:10px"><span style="color:var(--ink-2)">Sale de tu bolsillo</span>
-            <b style="margin-left:auto;font-family:var(--ff-num)">${money0(BASE_EJ.desembolso)} → ${money0(PLAN_EJ.desembolso)}</b></div>
+            <b style="margin-left:auto;font-family:var(--ff-num)">${p.dTotal}</b></div>
         </div></div>`;
     } },
   { tit: 'Cómo baja tu deuda', sub: 'Mes a mes, contra cómo ibas sin amortizar.', pinta(z) {
       z.innerHTML = '<div class="chartbox" style="height:100%"><div class="tip"></div></div>';
       lineChart(z.firstChild, [
-        { nombre: 'Como ibas', color: css('--serie-a'), etiqueta: 'Como ibas', datos: serieSaldo(BASE_EJ) },
-        { nombre: 'Amortizando', color: css('--serie-b'), etiqueta: 'Amortizando', datos: serieSaldo(PLAN_EJ), relleno: true },
+        { nombre: 'Como ibas', color: css('--serie-a'), etiqueta: 'Como ibas', datos: puntos(MUESTRA.premium.serieBase) },
+        { nombre: 'Amortizando', color: css('--serie-b'), etiqueta: 'Amortizando', datos: puntos(MUESTRA.premium.seriePlan), relleno: true },
       ]);
     } },
   { tit: 'A dónde se va tu plata', sub: 'Cuánto es deuda y cuánto se lleva el banco.', pinta(z) {
+      const b = MUESTRA.premium.barras;
       z.innerHTML = '<div class="chartbox" style="height:100%"></div>';
       stackedBars(z.firstChild, [
-        { nombre: 'Como ibas', capital: EJEMPLO.principal, interes: BASE_EJ.totalInteres,
-          color: css('--serie-a'), suave: css('--serie-a-soft') },
-        { nombre: 'Amortizando', capital: EJEMPLO.principal, interes: PLAN_EJ.totalInteres,
-          color: css('--serie-b'), suave: css('--serie-b-soft') },
+        { nombre: 'Como ibas', capital: b.capital, interes: b.interesBase, color: css('--serie-a'), suave: css('--serie-a-soft') },
+        { nombre: 'Amortizando', capital: b.capital, interes: b.interesPlan, color: css('--serie-b'), suave: css('--serie-b-soft') },
       ]);
     } },
   { tit: 'Qué te dicen tus números', sub: 'Leído en criollo, sobre tu propia simulación.', pinta(z) {
-      pintarInsights(z, insights(BASE_EJ, PLAN_EJ, cfgEjemplo()).slice(0, 3));
+      pintarInsights(z, MUESTRA.premium.insights.slice(0, 3));
     } },
   { tit: 'El cronograma mes a mes', sub: 'La tabla completa, cuota por cuota, y en Excel.', pinta(z) {
       z.innerHTML = `<div class="tablewrap" style="max-height:none"><table><thead><tr>
         <th style="text-align:left">Mes</th><th>Cuota</th><th>Interés</th><th>Capital</th><th>Te queda debiendo</th>
-        </tr></thead><tbody>${PLAN_EJ.rows.slice(0, 7).map(r =>
-          `<tr><td style="text-align:left">${r.mes} <span style="color:var(--ink-3)">${mesCorto(r.fecha)}</span></td>
-           <td>${nf(r.cuota)}</td><td>${nf(r.interes)}</td><td>${nf(r.amort)}</td><td>${nf(r.saldoFin)}</td></tr>`).join('')}
+        </tr></thead><tbody>${MUESTRA.premium.filas.slice(0, 7).map(f =>
+          `<tr><td style="text-align:left">${f[0]} <span style="color:var(--ink-3)">${mesCorto({ anio: f[1], mes: f[2] })}</span></td>
+           <td>${nf(f[4])}</td><td>${nf(f[5])}</td><td>${nf(f[6])}</td><td>${nf(f[9])}</td></tr>`).join('')}
         </tbody></table></div>`;
     } },
   { tit: 'Comparar dos créditos', sub: 'Banco A contra Banco B, comparados por TCEA.', pinta(z) {
-      const [A, B] = OPCIONES.map(o => cronograma(cfgDeOpcion(o)));
-      const ganaB = B.desembolso < A.desembolso, g = ganaB ? B : A, mal = ganaB ? A : B;
+      const c = MUESTRA.comparador;
       z.innerHTML = `<div style="display:flex;flex-direction:column;gap:14px">
         <span style="font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)">Cuál conviene</span>
-        <p style="font-size:1.02rem;line-height:1.55;margin:0">Gana el
-          <b>Banco ${ganaB ? 'B' : 'A'}</b>: te cuesta <b style="font-family:var(--ff-num)">${money0(mal.desembolso - g.desembolso)}</b> menos en total,
-          aunque su cuota sea de <b style="font-family:var(--ff-num)">${money0(ganaB ? B.cuotaInicial : A.cuotaInicial)}</b>.</p>
-        <div style="display:flex;gap:14px;font-size:.9rem">
-          <div style="flex:1"><span style="color:var(--ink-2)">Banco A · TCEA</span>
-            <div style="font-family:var(--ff-num);font-weight:700;font-size:1.2rem">${pct(A.tcea)}</div></div>
-          <div style="flex:1"><span style="color:var(--ink-2)">Banco B · TCEA</span>
-            <div style="font-family:var(--ff-num);font-weight:700;font-size:1.2rem">${pct(B.tcea)}</div></div>
-        </div></div>`;
+        <p style="font-size:1.02rem;line-height:1.55;margin:0">${c.veredicto}</p>
+        <table class="cmp"><tbody>${c.tabla}</tbody></table></div>`;
     } },
 ];
 
@@ -2434,7 +2029,7 @@ let laminaActual = 0, relojVisor = null;
 
 function muestraLamina(i) {
   const z = $('#pro-lienzo');
-  if (!z || !LAMINAS[i]) return;
+  if (!z || !LAMINAS[i] || !MUESTRA) return;
   laminaActual = i;
   try { LAMINAS[i].pinta(z); } catch (e) { z.innerHTML = ''; }
   $('#pro-visor-tit').textContent = LAMINAS[i].tit;
@@ -2443,18 +2038,18 @@ function muestraLamina(i) {
 }
 
 function arrancaVisor() {
-  const puntos = $('#pro-puntos');
-  if (!puntos || puntos.dataset.listo) return;
+  const puntosBtn = $('#pro-puntos');
+  if (!puntosBtn || puntosBtn.dataset.listo) return;
 
   const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const anda = () => { if (!quieto && !relojVisor) relojVisor = setInterval(() => muestraLamina((laminaActual + 1) % LAMINAS.length), 4500); };
   const para = () => { clearInterval(relojVisor); relojVisor = null; };
 
-  puntos.innerHTML = LAMINAS.map((l, i) =>
+  puntosBtn.innerHTML = LAMINAS.map((l, i) =>
     `<button type="button" role="tab" aria-selected="${i === 0}" aria-label="${l.tit}"></button>`).join('');
   // Si alguien elige una lámina a mano, el carrusel deja de moverse solo.
   $$('#pro-puntos button').forEach((b, i) => b.addEventListener('click', () => { para(); muestraLamina(i); }));
-  puntos.dataset.listo = '1';
+  puntosBtn.dataset.listo = '1';
 
   const visor = $('#pro-visor');
   visor.addEventListener('mouseenter', para);
@@ -2485,34 +2080,29 @@ async function pintarOferta() {
   } catch (e) { /* sin conexión: se queda el precio de lista, sin prometer nada */ }
 }
 
-function pintarVitrina() {
-  if (!BASE_EJ) { const c = cfgEjemplo(); BASE_EJ = cronograma(c.base); PLAN_EJ = cronograma(c.plan); }
-  arrancaVisor();
+async function pintarVitrina() {
   pintarOferta();
+  if (!MUESTRA) {
+    const { ok, cuerpo } = await api('/api/muestra');
+    if (!ok || !cuerpo || !cuerpo.premium) return;   // sin muestra, la vitrina queda sobria
+    MUESTRA = cuerpo;
+  }
+  arrancaVisor();
 
   const demo = $('#pro-demo');
   if (demo && !demo.dataset.listo) {
-    const base = BASE_EJ, plan = PLAN_EJ;
-    const ahorro = base.totalInteres - plan.totalInteres;
+    const e = MUESTRA.ejemplo;
     demo.innerHTML = `<span class="eyebrow">Un ejemplo, calculado ahora mismo</span>
-      <p class="frase">Un crédito de <b>${money0(EJEMPLO.principal)}</b> a <b>12 %</b> anual en
-      <b>60 meses</b>. Si pagas a capital <b>${money0(20000)}</b> en el mes 6 y otros
-      <b>${money0(20000)}</b> en el mes 12, te ahorras <b>${money0(ahorro)}</b> en intereses y
-      terminas <b>${meses2texto(base.meses - plan.meses)}</b> antes.</p>
+      <p class="frase">Un crédito de <b>${money0(e.principal)}</b> a <b>${nf(e.tea * 100, 0)} %</b> anual en
+      <b>${e.meses} meses</b>. ${MUESTRA.premium.frase.replace(/^Si /, 'Si ')}</p>
       <p class="pie">Con tus cifras el número es otro — eso es exactamente lo que se abre al suscribirte.</p>`;
     demo.dataset.listo = '1';
   }
 
   const cd = $('#cmp-demo');
-  if (cd && !cd.dataset.listo && typeof cfgDeOpcion === 'function') {
-    const [A, B] = OPCIONES.map(o => cronograma(cfgDeOpcion(o)));
-    const ganaB = B.desembolso < A.desembolso;
-    const g = ganaB ? B : A, pierde = ganaB ? A : B;
+  if (cd && !cd.dataset.listo) {
     cd.innerHTML = `<span class="eyebrow">Un ejemplo, calculado ahora mismo</span>
-      <p class="frase">Un banco te pide <b>${money0(A.cuotaInicial)}</b> al mes y el otro
-      <b>${money0(B.cuotaInicial)}</b>. Con los seguros, los portes y el bono, el que de verdad
-      sale más barato es <b>el ${ganaB ? 'segundo' : 'primero'}</b>: te cuesta
-      <b>${money0(pierde.desembolso - g.desembolso)}</b> menos en total.</p>
+      <p class="frase">${MUESTRA.comparador.veredicto}</p>
       <p class="pie">Casi nunca gana el de la cuota más baja. Por eso se compara por TCEA.</p>`;
     cd.dataset.listo = '1';
   }
@@ -2529,7 +2119,7 @@ function aplicarPremium() {
   if (!pro) { pintarVitrina(); recalcular(); compararAhora(); }
   else {
     recalcular(); compararAhora();
-    requestAnimationFrame(() => { if (!$('#view-sim').hidden) dibujar(); else compararAhora(); });
+    requestAnimationFrame(redibujar);
   }
   refrescarBarra();
 }
@@ -2900,17 +2490,16 @@ $('#view-sim').hidden = !$('#view-cmp').hidden;
 // gancho de pruebas: permite verificar la matemática desde la consola
 conectarCuenta();
 
-// Puerta para las pruebas: solo se abre con el archivo local o en localhost.
-// En el sitio publicado NO EXISTE — ni el motor, ni nada de aquí dentro—, así
-// que desde la consola no hay a qué llamarle para saltarse el muro.
+// Puerta para las pruebas: solo se abre con el archivo local o en localhost,
+// y ya ni siquiera tiene el motor que enseñar —ese vive en el servidor—.
+// Lo único que expone son ayudas para pinchar la interfaz desde el harness.
 if (location.protocol === 'file:' || location.hostname === 'localhost') {
-  window.__sim = { cronograma, pmt, tem, tir, cuotaVigenteDe };
-  Object.assign(window.__sim, { $, $$, aplicarPremium, oferta: () => OFERTA,
+  window.__sim = { $, $$, aplicarPremium, oferta: () => OFERTA, ultimo: () => ultimo,
     simularPagado: v => {
       yo = v === null || v === false ? null
         : { correo: 'prueba@local', activo: v !== 'impago', venceEn: 2000000000, precio: 20, dosFactores: false };
       pintarMuro(); aplicarPremium();
-    } });
+    } };
 }
 
 })();
