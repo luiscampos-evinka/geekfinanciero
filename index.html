@@ -490,10 +490,14 @@ body.sin-red .cifras .v{opacity:.45}
 @keyframes sube{from{opacity:0;transform:translateX(-50%) translateY(14px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .barra .bv{font-family:var(--ff-num);font-weight:700;font-size:1.02rem;white-space:nowrap}
 @media (max-width:520px){ .barra{padding:8px 8px 8px 16px;gap:9px;font-size:.85rem} }
+/* Entre 381 y 430 px —donde caen el iPhone y el Pixel, los anchos más comunes—
+   el contenido pedía 374 px y solo había 366: el botón de guardar quedaba
+   cortado. Se quita el rótulo «Te ahorras»; la cifra sola ya se entiende. */
+@media (max-width:430px){ .barra .bl{display:none} .barra{padding-left:14px} }
 .barra .bs{color:color-mix(in srgb, var(--bg) 72%, transparent);white-space:nowrap}
 .barra button{background:var(--bg);color:var(--ink);border-color:transparent;padding:7px 14px;border-radius:999px}
 .barra button.bg{background:var(--brand);color:var(--on-brand)}
-@media (max-width:380px){ .barra button:not(.bg){display:none} }
+@media (max-width:344px){ .barra button:not(.bg){display:none} }
 .barra button:hover{background:var(--bg);opacity:.85}
 @media (max-width:520px){ .barra .bs{display:none} }
 
@@ -1262,7 +1266,7 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
 </dialog>
 
 <div class="barra no-print" id="barra" hidden>
-  <span>Te ahorras</span>
+  <span class="bl">Te ahorras</span>
   <span class="bv" id="barra-v">—</span>
   <span class="bs" id="barra-s"></span>
   <button type="button" id="barra-btn">Ver detalle</button>
