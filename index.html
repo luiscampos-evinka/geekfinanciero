@@ -2366,6 +2366,25 @@ function pintarMuro() {
           <label for="f-nombre-credito">¿Cómo le llamas a este crédito?</label>
           <div class="inputwrap"><input type="text" id="f-nombre-credito" value="Mi crédito" maxlength="60"></div>
         </div>
+        <div class="sep"></div>
+        <div>
+          <label class="switchfila" style="margin-bottom:12px">
+            <span class="switch"><input type="checkbox" id="f-avisos" checked></span>
+            <span><b>Avísame cuando llegue la grati y el CTS</b><br>
+              <span style="color:var(--ink-3);font-size:.85rem">Cuatro correos al año —mayo, julio,
+              noviembre y diciembre— con cuánto te ahorrarías si esa plata va a capital.</span></span>
+          </label>
+          <div class="grid c2" id="f-avisos-montos">
+            <div class="field">
+              <label for="f-grati">¿Cuánto sueles recibir de gratificación?</label>
+              <div class="inputwrap has-pre"><span class="affix pre cur">S/</span><input type="number" id="f-grati" min="0" step="100" inputmode="decimal"></div>
+            </div>
+            <div class="field">
+              <label for="f-cts">¿Y de CTS?</label>
+              <div class="inputwrap has-pre"><span class="affix pre cur">S/</span><input type="number" id="f-cts" min="0" step="100" inputmode="decimal"></div>
+            </div>
+          </div>
+        </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button type="button" id="muro-guardar"
             style="background:var(--brand);border-color:var(--brand);color:var(--on-brand)">Guardar este crédito</button>
@@ -2378,6 +2397,12 @@ function pintarMuro() {
         <div id="muro-equipos-lista"></div>
       </div>`;
     $('#muro-guardar').addEventListener('click', guardarCredito);
+  // Sin avisos, los montos sobran: se esconden en vez de quedar ahí sin sentido.
+  const sw = $('#f-avisos'), montos = $('#f-avisos-montos');
+  if (sw && montos) {
+    const sync = () => { montos.hidden = !sw.checked; };
+    sw.addEventListener('change', sync); sync();
+  }
     $('#muro-listar').addEventListener('click', listarCreditos);
     $('#muro-equipos').addEventListener('click', misEquipos);
     $('#muro-2fa').addEventListener('click', cambiarDosFactores);
@@ -2485,7 +2510,11 @@ async function guardarCredito() {
   const nombre = ($('#f-nombre-credito').value || 'Mi crédito').trim();
   const { ok, estado, cuerpo } = await api('/api/creditos', {
     method: 'POST',
-    body: JSON.stringify({ nombre, datos: ultimo.cfg.plan }),
+    body: JSON.stringify({
+      nombre, datos: ultimo.cfg.plan,
+      avisos: $('#f-avisos') ? $('#f-avisos').checked : true,
+      montoGrati: val('#f-grati'), montoCts: val('#f-cts'),
+    }),
   });
   const av = $('#muro-resultado');
   if (ok) av.innerHTML = `<div class="aviso-cuenta ok">Guardado. Ya puedes volver cuando quieras.</div>`;
