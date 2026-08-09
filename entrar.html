@@ -57,14 +57,50 @@
       <a class="boton" href="/">Volver al simulador</a></div>`;
   };
 
-  if (!t) return falla('Este enlace está incompleto.');
+  const p = new URLSearchParams(location.search);
+  const code = p.get('code');
+  const estado = p.get('state');
 
+  const dispositivo = (() => {
+    try {
+      let d = localStorage.getItem('gf-dispositivo');
+      if (!d) { d = crypto.randomUUID(); localStorage.setItem('gf-dispositivo', d); }
+      return d;
+    } catch { return 'sin-almacenamiento'; }
+  })();
+
+  const entrar = (sesion) => {
+    try { localStorage.setItem('gf-sesion', sesion); } catch (e) {}
+    location.replace('/?entrar=ok');
+  };
+
+  // ---- vuelta de Google
+  if (code) {
+    let esperado = null;
+    try { esperado = sessionStorage.getItem('gf-estado'); } catch (e) {}
+    // El `state` prueba que esta vuelta salió de nuestro botón y no de un enlace ajeno.
+    if (esperado && estado !== esperado) return falla('Esta vuelta de Google no coincide con tu sesión.');
+    try {
+      const r = await fetch(`${API}/api/cuenta/google`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code, dispositivo }),
+      });
+      const d = await r.json();
+      if (d.sesion) return entrar(d.sesion);
+      if (d.error === 'limite_dispositivos') {
+        return falla('Tu cuenta ya está abierta en 4 equipos. Entra desde uno de ellos y saca el que ya no uses.');
+      }
+      return falla(d.error || 'Google no pudo confirmar tu cuenta.');
+    } catch (e) { return falla('No pudimos conectar con el servidor.'); }
+  }
+
+  // ---- enlace de acceso por correo
+  if (!t) return falla('Este enlace está incompleto.');
   try {
     const r = await fetch(`${API}/api/confirmar?json=1&t=${encodeURIComponent(t)}`);
     const d = await r.json();
     if (!r.ok || !d.sesion) return falla(d.error || 'No pudimos abrir tu cuenta.');
-    try { localStorage.setItem('gf-sesion', d.sesion); } catch (e) {}
-    location.replace('/?entrar=ok');
+    entrar(d.sesion);
   } catch (e) {
     falla('No pudimos conectar con el servidor.');
   }

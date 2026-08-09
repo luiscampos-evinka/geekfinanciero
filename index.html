@@ -139,6 +139,30 @@ p{margin:0}
 .marca .nombre{font-family:var(--ff-display);font-weight:600;font-size:1.12rem;letter-spacing:-.015em}
 .marca .nombre em{font-style:normal;color:var(--brand)}
 
+
+/* --- diálogo de cuenta, en varias vistas --- */
+dialog .dcuerpo > div[data-vista]{display:flex;flex-direction:column}
+dialog .lede{margin:6px 0 0}
+button.google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  margin-top:16px;padding:11px;background:var(--surface);border:1.5px solid var(--rule-2);font-size:.95rem}
+button.google:hover{background:var(--inset);border-color:var(--ink-3)}
+button.principal{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+button.principal:hover{filter:brightness(1.08);background:var(--brand)}
+.o{display:flex;align-items:center;gap:12px;margin:18px 0 14px;color:var(--ink-3);font-size:.8rem}
+.o::before,.o::after{content:"";flex:1;height:1px;background:var(--rule)}
+.enlaces{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}
+.enlaces a{font-size:.84rem;color:var(--brand);text-decoration:none;font-weight:600}
+.enlaces a:hover{text-decoration:underline}
+.equipos{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+.equipo{display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--inset);
+  border:1px solid var(--rule);border-radius:10px}
+.equipo .d{min-width:0;flex:1}
+.equipo .d strong{display:block;font-size:.9rem}
+.equipo .d span{font-size:.78rem;color:var(--ink-3)}
+.equipo .actual{font-size:.72rem;font-weight:700;color:var(--brand);background:var(--brand-soft);
+  padding:3px 8px;border-radius:99px}
+.equipo button{padding:7px 11px;font-size:.8rem}
+
 /* --- cuenta y muro de pago --- */
 .cuenta{display:flex;align-items:center;gap:8px}
 .cuenta .correo{font-size:.8rem;color:var(--ink-3);max-width:170px;overflow:hidden;
@@ -937,16 +961,93 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
 
 <dialog id="dlg-entrar">
   <div class="dcuerpo">
-    <h3>Entra sin contraseña</h3>
-    <p class="lede" style="font-size:.92rem">Pon tu correo y te mandamos un enlace. No hay contraseñas que recordar ni que se puedan filtrar.</p>
-    <div class="field" style="margin-top:16px">
-      <label for="f-correo">Tu correo</label>
-      <div class="inputwrap"><input type="email" id="f-correo" placeholder="tu@correo.com" autocomplete="email"></div>
+
+    <!-- ══ entrar ══ -->
+    <div data-vista="entrar">
+      <h3>Entra a tu cuenta</h3>
+      <p class="lede" style="font-size:.9rem">Para guardar tus créditos y volver a verlos cuando quieras.</p>
+      <button type="button" class="google" id="btn-google">
+        <svg viewBox="0 0 18 18" width="17" height="17" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.3c-.8.6-1.9.9-3.1.9-2.4 0-4.4-1.6-5.1-3.8H.9v2.3A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.9 10.7a5.4 5.4 0 0 1 0-3.4V5H.9a9 9 0 0 0 0 8l3-2.3z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 .9 5l3 2.3C4.6 5.2 6.6 3.6 9 3.6z"/></svg>
+        Entrar con Google
+      </button>
+      <div class="o"><span>o con tu correo</span></div>
+      <div class="field"><label for="f-correo">Correo</label>
+        <div class="inputwrap"><input type="email" id="f-correo" placeholder="tu@correo.com" autocomplete="email"></div></div>
+      <div class="field" style="margin-top:12px"><label for="f-clave">Contraseña</label>
+        <div class="inputwrap"><input type="password" id="f-clave" autocomplete="current-password"></div></div>
+      <div id="aviso-dlg"></div>
+      <div class="dpie">
+        <button type="button" class="ghost" data-cerrar>Cancelar</button>
+        <button type="button" class="principal" id="btn-entrar-clave">Entrar</button>
+      </div>
+      <div class="enlaces">
+        <a href="#" data-ir="crear">Crear una cuenta</a>
+        <a href="#" data-ir="recuperar">Olvidé mi contraseña</a>
+        <a href="#" id="btn-enlace-correo">Mándame un enlace</a>
+      </div>
     </div>
-    <div id="aviso-entrar"></div>
-    <div class="dpie">
-      <button type="button" id="btn-cancelar" class="ghost">Cancelar</button>
-      <button type="button" id="btn-enviar" style="background:var(--brand);border-color:var(--brand);color:var(--on-brand)">Mándame el enlace</button>
+
+    <!-- ══ crear cuenta ══ -->
+    <div data-vista="crear" hidden>
+      <h3>Crea tu cuenta</h3>
+      <p class="lede" style="font-size:.9rem">Es gratis. El simulador seguirá siendo gratis igual; la cuenta sirve para guardar tus créditos.</p>
+      <button type="button" class="google" id="btn-google2">
+        <svg viewBox="0 0 18 18" width="17" height="17" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.3c-.8.6-1.9.9-3.1.9-2.4 0-4.4-1.6-5.1-3.8H.9v2.3A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.9 10.7a5.4 5.4 0 0 1 0-3.4V5H.9a9 9 0 0 0 0 8l3-2.3z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 .9 5l3 2.3C4.6 5.2 6.6 3.6 9 3.6z"/></svg>
+        Continuar con Google
+      </button>
+      <div class="o"><span>o con tu correo</span></div>
+      <div class="field"><label for="c-correo">Correo</label>
+        <div class="inputwrap"><input type="email" id="c-correo" placeholder="tu@correo.com" autocomplete="email"></div></div>
+      <div class="field" style="margin-top:12px"><label for="c-clave">Contraseña</label>
+        <div class="inputwrap"><input type="password" id="c-clave" autocomplete="new-password"></div>
+        <span class="hint">Mínimo 8 caracteres, con letras y números.</span></div>
+      <div id="aviso-crear"></div>
+      <div class="dpie">
+        <button type="button" class="ghost" data-ir="entrar">Ya tengo cuenta</button>
+        <button type="button" class="principal" id="btn-crear">Crear cuenta</button>
+      </div>
+    </div>
+
+    <!-- ══ código ══ -->
+    <div data-vista="codigo" hidden>
+      <h3 id="cod-titulo">Revisa tu correo</h3>
+      <p class="lede" style="font-size:.9rem" id="cod-texto"></p>
+      <div class="field" style="margin-top:14px"><label for="f-codigo">Código de 6 dígitos</label>
+        <div class="inputwrap"><input type="text" id="f-codigo" inputmode="numeric" maxlength="6"
+          autocomplete="one-time-code" style="font-size:1.5rem;letter-spacing:.35em;text-align:center"></div></div>
+      <div id="aviso-codigo"></div>
+      <div class="dpie">
+        <button type="button" class="ghost" data-ir="entrar">Volver</button>
+        <button type="button" class="principal" id="btn-codigo">Confirmar</button>
+      </div>
+    </div>
+
+    <!-- ══ recuperar ══ -->
+    <div data-vista="recuperar" hidden>
+      <h3>¿Olvidaste tu contraseña?</h3>
+      <p class="lede" style="font-size:.9rem">Pon tu correo y te mandamos un enlace para elegir una nueva.</p>
+      <div class="field" style="margin-top:14px"><label for="r-correo">Tu correo</label>
+        <div class="inputwrap"><input type="email" id="r-correo" placeholder="tu@correo.com" autocomplete="email"></div></div>
+      <div id="aviso-recuperar"></div>
+      <div class="dpie">
+        <button type="button" class="ghost" data-ir="entrar">Volver</button>
+        <button type="button" class="principal" id="btn-recuperar">Mándame el enlace</button>
+      </div>
+    </div>
+
+    <!-- ══ demasiados equipos ══ -->
+    <div data-vista="equipos" hidden>
+      <h3>Tu cuenta ya está en 4 equipos</h3>
+      <p class="lede" style="font-size:.9rem">Saca uno de la lista para entrar desde este. Es para evitar cuentas compartidas.</p>
+      <div id="lista-equipos" class="equipos"></div>
+      <div class="dpie"><button type="button" class="ghost" data-cerrar>Cerrar</button></div>
+    </div>
+
+    <!-- ══ aviso simple ══ -->
+    <div data-vista="aviso" hidden>
+      <h3 id="av-titulo">Listo</h3>
+      <p class="lede" style="font-size:.95rem" id="av-texto"></p>
+      <div class="dpie"><button type="button" class="principal" data-cerrar>Entendido</button></div>
     </div>
   </div>
 </dialog>
@@ -2135,9 +2236,15 @@ function pintarMuro() {
           <button type="button" id="muro-listar" class="ghost">Ver los que guardé</button>
         </div>
         <div id="muro-resultado"></div>
+        <div class="sep"></div>
+        <div><button type="button" id="muro-equipos" class="ghost">Mis equipos conectados</button>
+          <button type="button" id="muro-2fa" class="ghost">${yo.dosFactores ? 'Quitar' : 'Activar'} verificación en dos pasos</button></div>
+        <div id="muro-equipos-lista"></div>
       </div>`;
     $('#muro-guardar').addEventListener('click', guardarCredito);
     $('#muro-listar').addEventListener('click', listarCreditos);
+    $('#muro-equipos').addEventListener('click', misEquipos);
+    $('#muro-2fa').addEventListener('click', cambiarDosFactores);
     return;
   }
 
@@ -2207,6 +2314,34 @@ async function aplicarCupon() {
     `<div class="aviso-cuenta ok">Cupón aplicado: pagas <b>S/ ${nf(cuerpo.precioFinal)}</b> en vez de S/ ${nf(cuerpo.precio)}.</div>`;
 }
 
+/** Los equipos desde los que está abierta la cuenta, con la opción de sacarlos. */
+async function misEquipos() {
+  const z = $('#muro-equipos-lista');
+  const { ok, cuerpo } = await api('/api/dispositivos');
+  if (!ok || !cuerpo) return z.innerHTML = `<div class="aviso-cuenta mal">No se pudo leer.</div>`;
+  z.innerHTML = `<div class="equipos">` + cuerpo.dispositivos.map(d => `
+    <div class="equipo">
+      <span class="d"><strong>${d.nombre || 'Equipo'}</strong>
+        <span>última vez ${fechaLarga(d.visto_en)}</span></span>
+      ${d.id === cuerpo.actual
+        ? '<span class="actual">este</span>'
+        : `<button type="button" data-quitar="${d.id}">Sacar</button>`}
+    </div>`).join('') +
+    `</div><p class="card-note" style="font-size:.83rem;margin-top:10px;color:var(--ink-3)">
+      ${cuerpo.dispositivos.length} de ${cuerpo.maximo} equipos. El que saques pierde el acceso al instante.</p>`;
+  $$('#muro-equipos-lista [data-quitar]').forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true; b.textContent = 'Sacando…';
+    await api('/api/dispositivos', { method: 'POST', body: JSON.stringify({ id: b.dataset.quitar }) });
+    misEquipos();
+  }));
+}
+
+async function cambiarDosFactores() {
+  const activar = !yo.dosFactores;
+  const { ok } = await api('/api/cuenta/dos-factores', { method: 'POST', body: JSON.stringify({ activar }) });
+  if (ok) await refrescarCuenta();
+}
+
 async function guardarCredito() {
   if (!ultimo) return;
   const nombre = ($('#f-nombre-credito').value || 'Mi crédito').trim();
@@ -2230,30 +2365,154 @@ async function listarCreditos() {
   ).join('')}</div>`;
 }
 
-function abrirEntrar() {
-  $('#aviso-entrar').innerHTML = '';
-  $('#dlg-entrar').showModal();
-  $('#f-correo').focus();
+/* --- el diálogo, que es una pequeña máquina de estados --- */
+
+const dlg = () => $('#dlg-entrar');
+let correoEnCurso = '';   // el correo que espera código
+let tipoCodigo = '';      // 'verificar' | 'dos-pasos'
+
+function mostrar(vista) {
+  $$('#dlg-entrar [data-vista]').forEach(v => { v.hidden = v.dataset.vista !== vista; });
+  $$('#dlg-entrar .aviso-cuenta').forEach(a => a.remove());
+  if (!dlg().open) dlg().showModal();
+  const foco = $(`#dlg-entrar [data-vista="${vista}"] input`);
+  if (foco) setTimeout(() => foco.focus(), 60);
+}
+
+const avisar = (donde, texto, bien = false) => {
+  const el = $(donde);
+  if (el) el.innerHTML = `<div class="aviso-cuenta ${bien ? 'ok' : 'mal'}">${texto}</div>`;
+};
+
+function abrirEntrar() { mostrar('entrar'); }
+
+/** Identificador del equipo: lo genera el navegador y vive solo aquí. */
+function idDispositivo() {
+  try {
+    let d = localStorage.getItem('gf-dispositivo');
+    if (!d) { d = crypto.randomUUID(); localStorage.setItem('gf-dispositivo', d); }
+    return d;
+  } catch { return 'sin-almacenamiento'; }
+}
+
+/** Todas las respuestas de acceso terminan aquí: sesión, código, o equipos llenos. */
+async function trasIntentar(r, donde) {
+  const d = r.cuerpo || {};
+  if (d.sesion) {
+    sesion.set(d.sesion);
+    dlg().close();
+    await refrescarCuenta();
+    return true;
+  }
+  if (d.faltaVerificar) { tipoCodigo = 'verificar'; pedirCodigo(); return false; }
+  if (d.dosPasos) { tipoCodigo = 'dos-pasos'; pedirCodigo(); return false; }
+  if (d.error === 'limite_dispositivos') { pintarEquipos(d.dispositivos, d.mensaje); return false; }
+  if (d.revisaTuCorreo) {
+    tipoCodigo = 'verificar'; pedirCodigo(); return false;
+  }
+  avisar(donde, d.error || 'No se pudo. Inténtalo de nuevo.');
+  return false;
+}
+
+function pedirCodigo() {
+  $('#cod-titulo').textContent = tipoCodigo === 'dos-pasos' ? 'Confirma que eres tú' : 'Revisa tu correo';
+  $('#cod-texto').textContent = tipoCodigo === 'dos-pasos'
+    ? `Te mandamos un código a ${correoEnCurso}. Vence en 15 minutos.`
+    : `Te mandamos un código de 6 dígitos a ${correoEnCurso} para confirmar que el correo es tuyo.`;
+  $('#f-codigo').value = '';
+  mostrar('codigo');
+}
+
+/**
+ * El tope de equipos se choca ANTES de tener sesión, así que desde aquí no se
+ * puede revocar nada — no habría con qué autorizar la operación. Lo honesto es
+ * mostrarle cuáles son y decirle exactamente qué hacer.
+ */
+function pintarEquipos(lista, mensaje) {
+  $('#lista-equipos').innerHTML = (lista || []).map(d => `
+    <div class="equipo">
+      <span class="d"><strong>${d.nombre || 'Equipo'}</strong>
+        <span>última vez ${fechaLarga(d.visto || d.visto_en)}</span></span>
+    </div>`).join('') +
+    `<div class="aviso-cuenta mal" style="margin-top:6px">Entra desde uno de esos equipos y saca el
+     que ya no uses en <b>Mis equipos</b>. Después podrás entrar desde este.</div>`;
+  mostrar('equipos');
+}
+
+async function entrarConClave() {
+  const correo = $('#f-correo').value.trim(), clave = $('#f-clave').value;
+  if (!correo || !clave) return avisar('#aviso-dlg', 'Pon tu correo y tu contraseña.');
+  correoEnCurso = correo;
+  const b = $('#btn-entrar-clave'); b.disabled = true; b.textContent = 'Entrando…';
+  const r = await api('/api/cuenta/entrar', {
+    method: 'POST', body: JSON.stringify({ correo, clave, dispositivo: idDispositivo() }),
+  });
+  b.disabled = false; b.textContent = 'Entrar';
+  await trasIntentar(r, '#aviso-dlg');
+}
+
+async function crearCuenta() {
+  const correo = $('#c-correo').value.trim(), clave = $('#c-clave').value;
+  if (!correo) return avisar('#aviso-crear', 'Pon tu correo.');
+  correoEnCurso = correo;
+  const b = $('#btn-crear'); b.disabled = true; b.textContent = 'Creando…';
+  const r = await api('/api/cuenta/crear', { method: 'POST', body: JSON.stringify({ correo, clave }) });
+  b.disabled = false; b.textContent = 'Crear cuenta';
+  await trasIntentar(r, '#aviso-crear');
+}
+
+async function confirmarCodigo() {
+  const codigo = $('#f-codigo').value.trim();
+  if (codigo.length !== 6) return avisar('#aviso-codigo', 'El código son 6 dígitos.');
+  const b = $('#btn-codigo'); b.disabled = true; b.textContent = 'Confirmando…';
+  const ruta = tipoCodigo === 'dos-pasos' ? '/api/cuenta/dos-pasos' : '/api/cuenta/verificar';
+  const r = await api(ruta, {
+    method: 'POST',
+    body: JSON.stringify({ correo: correoEnCurso, codigo, dispositivo: idDispositivo() }),
+  });
+  b.disabled = false; b.textContent = 'Confirmar';
+  await trasIntentar(r, '#aviso-codigo');
+}
+
+async function pedirRecuperar() {
+  const correo = $('#r-correo').value.trim();
+  if (!correo) return avisar('#aviso-recuperar', 'Pon tu correo.');
+  const b = $('#btn-recuperar'); b.disabled = true; b.textContent = 'Enviando…';
+  await api('/api/cuenta/recuperar', { method: 'POST', body: JSON.stringify({ correo }) });
+  b.disabled = false; b.textContent = 'Mándame el enlace';
+  $('#av-titulo').textContent = 'Revisa tu correo';
+  $('#av-texto').textContent = `Si ${correo} tiene una cuenta, le acaba de llegar un enlace para ` +
+    `elegir una contraseña nueva. Vence en 20 minutos.`;
+  mostrar('aviso');
 }
 
 async function pedirEnlace() {
   const correo = $('#f-correo').value.trim();
-  const av = $('#aviso-entrar');
-  if (!/^[^@\s]+@[^@\s.]+\.[^@\s]{2,}$/.test(correo)) {
-    av.innerHTML = `<div class="aviso-cuenta mal">Ese correo no parece válido.</div>`;
-    return;
-  }
-  $('#btn-enviar').disabled = true;
-  const { ok, cuerpo } = await api('/api/entrar', { method: 'POST', body: JSON.stringify({ correo }) });
-  $('#btn-enviar').disabled = false;
-  if (!ok || !cuerpo || cuerpo.error) {
-    av.innerHTML = `<div class="aviso-cuenta mal">${(cuerpo && cuerpo.error) || 'No se pudo enviar. Inténtalo de nuevo.'}</div>`;
-    return;
-  }
-  av.innerHTML = cuerpo.enviado
-    ? `<div class="aviso-cuenta ok">Listo. Revisa <b>${correo}</b>: el enlace vence en 20 minutos.</div>`
-    : `<div class="aviso-cuenta mal">Tu cuenta quedó creada, pero el envío de correos todavía no
-       está activo, así que el enlace no salió. Estamos en eso.</div>`;
+  if (!correo) return avisar('#aviso-dlg', 'Pon tu correo primero.');
+  const b = $('#btn-enlace-correo'); const antes = b.textContent; b.textContent = 'Enviando…';
+  const { cuerpo } = await api('/api/entrar', { method: 'POST', body: JSON.stringify({ correo }) });
+  b.textContent = antes;
+  $('#av-titulo').textContent = 'Revisa tu correo';
+  $('#av-texto').textContent = (cuerpo && cuerpo.enviado)
+    ? `Te mandamos un enlace a ${correo}. Ábrelo y entras directo, sin contraseña. Vence en 20 minutos.`
+    : `Tu cuenta quedó creada, pero el envío de correos falló. Inténtalo de nuevo en un momento.`;
+  mostrar('aviso');
+}
+
+/** Manda a Google. El `state` viaja para volver y comprobar que la vuelta es nuestra. */
+async function irAGoogle() {
+  const { cuerpo } = await api('/api/cuenta/config');
+  if (!cuerpo || !cuerpo.clienteGoogle) return avisar('#aviso-dlg', 'Entrar con Google no está disponible ahora.');
+  const estado = crypto.randomUUID();
+  try { sessionStorage.setItem('gf-estado', estado); } catch {}
+  const u = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+  u.searchParams.set('client_id', cuerpo.clienteGoogle);
+  u.searchParams.set('redirect_uri', location.origin + '/entrar.html');
+  u.searchParams.set('response_type', 'code');
+  u.searchParams.set('scope', 'openid email profile');
+  u.searchParams.set('state', estado);
+  u.searchParams.set('prompt', 'select_account');
+  location.href = u.toString();
 }
 
 function conectarCuenta() {
@@ -2261,9 +2520,22 @@ function conectarCuenta() {
     if (sesion.get()) { sesion.set(null); refrescarCuenta(); }
     else abrirEntrar();
   });
-  $('#btn-cancelar').addEventListener('click', () => $('#dlg-entrar').close());
-  $('#btn-enviar').addEventListener('click', pedirEnlace);
-  $('#f-correo').addEventListener('keydown', e => { if (e.key === 'Enter') pedirEnlace(); });
+  $$('#dlg-entrar [data-cerrar]').forEach(b => b.addEventListener('click', () => dlg().close()));
+  $$('#dlg-entrar [data-ir]').forEach(a => a.addEventListener('click', e => {
+    e.preventDefault(); mostrar(a.dataset.ir);
+  }));
+  $('#btn-entrar-clave').addEventListener('click', entrarConClave);
+  $('#btn-crear').addEventListener('click', crearCuenta);
+  $('#btn-codigo').addEventListener('click', confirmarCodigo);
+  $('#btn-recuperar').addEventListener('click', pedirRecuperar);
+  $('#btn-enlace-correo').addEventListener('click', e => { e.preventDefault(); pedirEnlace(); });
+  $('#btn-google').addEventListener('click', irAGoogle);
+  $('#btn-google2').addEventListener('click', irAGoogle);
+  // Enter envía lo que corresponda a cada vista
+  $('#f-clave').addEventListener('keydown', e => { if (e.key === 'Enter') entrarConClave(); });
+  $('#c-clave').addEventListener('keydown', e => { if (e.key === 'Enter') crearCuenta(); });
+  $('#f-codigo').addEventListener('keydown', e => { if (e.key === 'Enter') confirmarCodigo(); });
+  $('#r-correo').addEventListener('keydown', e => { if (e.key === 'Enter') pedirRecuperar(); });
 
   if (new URLSearchParams(location.search).get('pago') === 'listo') {
     // Flow avisa al servidor por su cuenta, y eso puede tardar unos segundos
