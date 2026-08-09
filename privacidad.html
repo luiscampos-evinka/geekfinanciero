@@ -46,13 +46,19 @@
     almacenar para no volver a escribirlos.</li>
     <li><strong>El estado de tu suscripción.</strong> Hasta qué fecha tienes acceso y el registro
     de tus pagos (fecha, importe y referencia de la pasarela).</li>
+    <li><strong>Tus equipos.</strong> Un identificador que genera tu propio navegador, más el tipo
+    de navegador y sistema («Chrome en Windows»), para poder aplicar el límite de 4 equipos y para
+    que tú puedas ver desde dónde está abierta tu cuenta. <b>No guardamos tu ubicación, tu IP ni
+    nada del contenido de tu equipo</b>, y puedes borrar cualquiera de ellos cuando quieras.</li>
   </ul>
   <p><strong>No pedimos ni guardamos:</strong> DNI, dirección, teléfono, ni datos de tu tarjeta.
   No cruzamos tu información con centrales de riesgo ni con ninguna entidad financiera.</p>
 
   <h2>2. Contraseñas y tarjetas</h2>
-  <p>No usamos contraseñas: entras con un enlace que te llega al correo. Por eso
-  <strong>no existe ninguna contraseña tuya que se pueda filtrar</strong>.</p>
+  <p><strong>Tu contraseña no se guarda.</strong> Lo que se almacena es una huella criptográfica
+  (PBKDF2-SHA256 con sal distinta para cada usuario), de la que no se puede reconstruir la original.
+  Ni el equipo que hizo este sitio puede leerla. También puedes entrar sin contraseña, con un enlace
+  que te llega al correo.</p>
   <p>Los datos de tu tarjeta los recibe y los guarda directamente la pasarela de pago autorizada.
   <strong>Nunca pasan por nuestros servidores.</strong> Nosotros solo recibimos el aviso de que el
   pago se realizó.</p>
