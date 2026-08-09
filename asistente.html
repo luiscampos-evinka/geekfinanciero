@@ -71,7 +71,9 @@
   @media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])) .mal{background:#2a2213;color:#f4f2ea}}
 </style>
 </head>
-<body>
+<!-- spellcheck off en todo el documento: el corrector subrayaba en rojo
+     "grati", "CTS", nombres de bancos y hasta las cifras, y parecia que estaba mal escrito. -->
+<body spellcheck="false">
 <main class="hoja">
   <a class="marca" href="/" aria-label="Geek Financiero">
     <svg viewBox="0 0 258 102" width="76" height="30" aria-hidden="true" fill="none">
@@ -91,7 +93,10 @@
 
   <div class="caja">
     <label for="texto" class="sr-only" style="position:absolute;left:-9999px">Cuéntame tu crédito</label>
+    <!-- spellcheck off: el corrector del navegador subrayaba en rojo "grati", "CTS" y hasta las
+         cifras, y daba la impresión de que lo escrito estaba mal. -->
     <textarea id="texto" maxlength="600" rows="3" autocomplete="off"
+      spellcheck="false" autocorrect="off" autocapitalize="sentences"
       placeholder="Por ejemplo: debo 85 mil al 14 % a cinco años, y en julio me entra la grati, unos 8 mil…"></textarea>
     <div class="pieCaja">
       <span class="cuenta" id="cuenta">0 / 600</span>
