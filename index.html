@@ -1822,7 +1822,9 @@ let ultimo = null;
 function recalcular() {
   const cfg = leerConfig();
   const base = cronograma(cfg.base);
-  const plan = cronograma(cfg.plan);
+  // Lo de pago no se calcula si no está pagado. Así, aunque alguien le quite el
+  // «hidden» a las secciones desde el inspector, no hay nada escrito que leer.
+  const plan = esPro() ? cronograma(cfg.plan) : null;
   ultimo = { cfg, base, plan };
 
   // --- paso 1: la respuesta inmediata, en una frase
@@ -1848,7 +1850,9 @@ function recalcular() {
     ? `Le quedaban ${Math.max(0, cfg.base.meses - cfg.plan.compra.mes + 1)} meses`
     : '';
 
-  // --- paso 3: la respuesta
+  // --- paso 3: la respuesta (solo con suscripción)
+  if (!plan) { vaciarDePago(); guardar(); return; }
+
   const ahorro = base.totalInteres - plan.totalInteres;
   const ahorroMeses = base.meses - plan.meses;
   const bajaCuota = base.cuotaInicial - plan.cuotaVigente;
@@ -1905,6 +1909,18 @@ function recalcular() {
   guardar();
 }
 
+/** Deja en blanco todo lo que es de pago. Se llama cuando no hay suscripción. */
+function vaciarDePago() {
+  ['#r-frase', '#h-pie', '#d-cuota', '#d-plazo', '#d-int', '#d-total', '#insights', '#chart-comp']
+    .forEach(k => { const e = $(k); if (e) e.innerHTML = ''; });
+  // El gráfico de saldo conserva su .tip: lineChart lo busca al volver a dibujar.
+  const cs = $('#chart-saldo'); if (cs) cs.innerHTML = '<div class="tip"></div>';
+  const big = $('#h-ahorro'); if (big) big.textContent = '—';
+  const tb = $('#tbl tbody'); if (tb) tb.innerHTML = '';
+  const barra = $('#barra'); if (barra) { barra.dataset.hay = ''; $('#barra-v').textContent = '—'; $('#barra-s').textContent = ''; }
+  refrescarBarra();
+}
+
 function serieSaldo(res) {
   const d = [{ x: 0, y: res.rows.length ? res.rows[0].saldoIni : 0 }];
   res.rows.forEach(r => d.push({ x: r.mes, y: r.saldoFin }));
@@ -1912,7 +1928,7 @@ function serieSaldo(res) {
 }
 
 function dibujar() {
-  if (!ultimo) return;
+  if (!ultimo || !ultimo.plan) return;
   const { base, plan } = ultimo;
   lineChart($('#chart-saldo'), [
     { nombre: 'Como ibas', color: css('--serie-a'), etiqueta: 'Como ibas', datos: serieSaldo(base) },
@@ -1927,7 +1943,7 @@ function dibujar() {
 }
 
 function pintarTabla() {
-  if (!ultimo) return;
+  if (!ultimo || !ultimo.plan) return;
   const cual = document.querySelector('input[name=crono]:checked').value;
   const res = cual === 'base' ? ultimo.base : ultimo.plan;
   $('#tbl tbody').innerHTML = res.rows.map(r => `
@@ -2020,6 +2036,10 @@ function cfgDeOpcion(o) {
 }
 
 function compararAhora() {
+  if (!esPro()) { const v = $('#cmp-verdict'), i = $('#cmp-insights'), g = $('#chart-cmp');
+    if (v) v.innerHTML = ''; if (i) i.innerHTML = '';
+    if (g) g.innerHTML = '<div class="tip"></div>';   // el .tip lo necesita lineChart
+    return; }
   const cfgs = OPCIONES.map(cfgDeOpcion);
   const res = cfgs.map(cronograma);
 
@@ -2506,8 +2526,11 @@ function aplicarPremium() {
   const m = $('#muro-premium'), mc = $('#muro-cmp');
   if (m) m.hidden = pro;
   if (mc) mc.hidden = pro;
-  if (!pro) pintarVitrina();
-  else requestAnimationFrame(() => { if (!$('#view-sim').hidden) dibujar(); else compararAhora(); });
+  if (!pro) { pintarVitrina(); recalcular(); compararAhora(); }
+  else {
+    recalcular(); compararAhora();
+    requestAnimationFrame(() => { if (!$('#view-sim').hidden) dibujar(); else compararAhora(); });
+  }
   refrescarBarra();
 }
 
@@ -2877,10 +2900,11 @@ $('#view-sim').hidden = !$('#view-cmp').hidden;
 // gancho de pruebas: permite verificar la matemática desde la consola
 conectarCuenta();
 
-window.__sim = { cronograma, pmt, tem, tir, cuotaVigenteDe };
-// Puerta para las pruebas: solo se abre con el archivo local. En el sitio
-// publicado —que va por https— no existe, así que no sirve para saltarse nada.
+// Puerta para las pruebas: solo se abre con el archivo local o en localhost.
+// En el sitio publicado NO EXISTE — ni el motor, ni nada de aquí dentro—, así
+// que desde la consola no hay a qué llamarle para saltarse el muro.
 if (location.protocol === 'file:' || location.hostname === 'localhost') {
+  window.__sim = { cronograma, pmt, tem, tir, cuotaVigenteDe };
   Object.assign(window.__sim, { $, $$, aplicarPremium, oferta: () => OFERTA,
     simularPagado: v => {
       yo = v === null || v === false ? null
