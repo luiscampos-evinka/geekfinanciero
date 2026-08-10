@@ -31,7 +31,7 @@ function fila(d = {}) {
       <label>Pagas al mes</label>
       <input type="number" class="f-cuota" min="0" step="10" inputmode="decimal">
     </div>
-    <button type="button" class="quitar" title="Quitar esta deuda" aria-label="Quitar esta deuda">×</button>`;
+    <button type="button" class="quitar" title="Quitar esta deuda" aria-label="Quitar esta deuda">× Quitar</button>`;
   n.querySelector('.f-nombre').value = d.nombre || '';
   n.querySelector('.f-saldo').value = d.saldo ?? '';
   n.querySelector('.f-tea').value = d.tea ?? '';

@@ -41,7 +41,9 @@
   .quitar{font:inherit;font-size:1.1rem;line-height:1;padding:9px 12px;border:1.5px solid var(--rule-2);
     border-radius:9px;background:none;color:var(--ink-3);cursor:pointer}
   .quitar:hover{border-color:var(--brand);color:var(--ink)}
-  @media (max-width:720px){ .quitar{grid-column:1/-1} }
+  /* En movil no puede ocupar todo el ancho: parece el boton principal.
+     Cae al lado de «Pagas al mes», que es donde no estorba. */
+  .quitar{white-space:nowrap;font-size:.88rem;font-weight:600;padding:10px 14px}
 
   .acciones{display:flex;gap:11px;flex-wrap:wrap;align-items:center;margin:16px 0 26px}
   button.ppal{font:inherit;font-weight:650;font-size:1rem;padding:13px 26px;border:none;
