@@ -117,6 +117,23 @@ function pinta(r) {
           </div>`;
   }
 
+  // Dónde está cada deuda contra lo que cobra el mercado. Es el dato que
+  // nadie da fuera del hipotecario, y hay que darlo con su fecha y su aviso:
+  // son tasas promedio referenciales, no la oferta de nadie.
+  if (g.mercado && g.mercado.length) {
+    h += `<div class="mercado"><h3>Tu tasa contra la del mercado</h3>`;
+    for (const m of g.mercado) {
+      h += `<div class="tarj ${m.caro ? 'warn' : ''}">
+              <span class="mk">${m.caro ? '!' : '✓'}</span><span>${m.texto}</span>
+            </div>`;
+    }
+    h += `<p class="fuente">Tasas promedio publicadas por la <b>SBS</b> al
+          ${(g.tasasAl || '').split('-').reverse().join('/')}, de bancos, financieras y cajas
+          municipales en soles. Son <b>referenciales</b>: la tasa que te den depende de tu
+          perfil. Que otra entidad cobre menos no significa que te la vayan a aprobar.</p>
+          </div>`;
+  }
+
   if (g.deducidas && g.deducidas.length) {
     h += `<div class="tarj"><span class="mk">i</span><span>No pusiste la tasa de
           <b>${g.deducidas.join('</b>, <b>')}</b>, así que la deduje desde lo que pagas al mes
