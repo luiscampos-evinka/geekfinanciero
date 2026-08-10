@@ -127,11 +127,10 @@ function pinta(r) {
               <span class="mk">${m.caro ? '!' : '✓'}</span><span>${m.texto}</span>
             </div>`;
     }
-    h += `<p class="fuente">Tasas promedio publicadas por la <b>SBS</b> al
-          ${(g.tasasAl || '').split('-').reverse().join('/')}, de bancos, financieras y cajas
-          municipales en soles. Son <b>referenciales</b>: la tasa que te den depende de tu
-          perfil. Que otra entidad cobre menos no significa que te la vayan a aprobar.</p>
-          </div>`;
+    h += `<p class="fuente">Tasas promedio publicadas por la <b>SBS</b> en soles
+          (${g.tasasFuente || 'fuente SBS'}). Son <b>referenciales</b>: la tasa que te den
+          depende de tu perfil. Que otra entidad cobre menos no significa que te la vayan
+          a aprobar.</p></div>`;
   }
 
   if (g.deducidas && g.deducidas.length) {
