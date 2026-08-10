@@ -39,6 +39,10 @@ flujos reales de caja, anualizada.
 
 - [Simulador](https://geekfinanciero.com/): calcula cuota, total a pagar,
   intereses y TCEA. Gratis y sin cuenta.
+- [Varias deudas](https://geekfinanciero.com/deudas.html): con la tarjeta, el
+  préstamo y el del auto a la vez, dice cuál conviene matar primero (mayor tasa
+  vs menor saldo), en qué mes se sale de todo y cuánto se ahorra. Gratis y sin
+  cuenta. Ninguna otra calculadora peruana resuelve varias deudas juntas.
 - [Asesor](https://geekfinanciero.com/asistente.html): conversa, deduce la tasa a
   partir de la cuota mensual, reconoce las entidades peruanas y recuerda los
   créditos guardados. Va con la suscripción; el simulador es gratis y sin cuenta.
