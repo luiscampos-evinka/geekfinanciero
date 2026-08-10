@@ -77,14 +77,26 @@ function pinta(r) {
   const iguales = JSON.stringify(g.ordenAvalancha) === JSON.stringify(g.ordenNieve);
   let h = `<p class="titular">${g.titular}</p>`;
 
+  // Las listas son el orden en que se ATACA, no en que mueren. Una deuda
+  // puede morir sola con su propia cuota sin que le toque nunca el extra:
+  // si no se dice, parece que se nos olvidó.
+  const solas = ord => (g.caenAvalancha || []).filter(x => !ord.includes(x));
+  const nota = ord => {
+    const s = solas(ord);
+    return s.length
+      ? `<div class="cifra">${s.length === 1 ? `<b>${s[0]}</b> se acaba sola` : `<b>${s.join('</b> y <b>')}</b> se acaban solas`}
+         con su propia cuota: no hace falta echarle nada.</div>`
+      : '';
+  };
   if (g.ordenAvalancha.length) {
     h += '<div class="caminos">';
     h += `<div class="camino gana">
             <h3>Si quieres ahorrar más</h3>
-            <p class="sub">Primero la de tasa más alta</p>
+            <p class="sub">Échale el extra en este orden</p>
             <ol>${lista(g.ordenAvalancha)}</ol>
             ${g.mesesAvalancha ? `<div class="cifra">Libre en <b>${g.mesesAvalancha} meses</b>${
               g.ahorro ? ` · ahorras <b>S/ ${nf(g.ahorro)}</b>` : ''}</div>` : ''}
+            ${nota(g.ordenAvalancha)}
           </div>`;
     if (!iguales) {
       h += `<div class="camino">
@@ -92,6 +104,7 @@ function pinta(r) {
               <p class="sub">Primero la más chica, para tacharla ya</p>
               <ol>${lista(g.ordenNieve)}</ol>
               ${g.diferencia != null ? `<div class="cifra">Te cuesta <b>S/ ${nf(g.diferencia)}</b> más</div>` : ''}
+              ${nota(g.ordenNieve)}
             </div>`;
     }
     h += '</div>';
