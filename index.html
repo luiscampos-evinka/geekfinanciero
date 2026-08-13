@@ -2714,6 +2714,14 @@ async function trasIntentar(r, donde) {
   if (d.faltaVerificar) { tipoCodigo = 'verificar'; pedirCodigo(); return false; }
   if (d.dosPasos) { tipoCodigo = 'dos-pasos'; pedirCodigo(); return false; }
   if (d.error === 'limite_dispositivos') { pintarEquipos(d.dispositivos, d.mensaje); return false; }
+  // El correo ya tiene cuenta: en vez de dejarlo en la pantalla de crear, se le
+  // lleva a la de entrar con el correo puesto, que es lo que necesita hacer.
+  if (d.yaExiste) {
+    $('#f-correo').value = correoEnCurso;
+    mostrar('entrar');
+    avisar('#aviso-dlg', d.error);
+    return false;
+  }
   if (d.revisaTuCorreo) {
     tipoCodigo = 'verificar'; pedirCodigo(); return false;
   }
