@@ -2804,13 +2804,24 @@ async function pedirRecuperar() {
 async function pedirEnlace() {
   const correo = $('#f-correo').value.trim();
   if (!correo) return avisar('#aviso-dlg', 'Pon tu correo primero.');
-  const b = $('#btn-enlace-correo'); const antes = b.textContent; b.textContent = 'Enviando…';
-  const { cuerpo } = await api('/api/entrar', { method: 'POST', body: JSON.stringify({ correo }) });
-  b.textContent = antes;
+  const b = $('#btn-enlace-correo');
+  // Es un enlace, no un botón, así que no admite `disabled` como sus hermanos:
+  // sin esta guarda, un doble toque manda dos correos y gasta el doble de cupo.
+  if (b.dataset.enviando) return;
+  const antes = b.textContent; b.dataset.enviando = '1'; b.textContent = 'Enviando…';
+  const r = await api('/api/entrar', { method: 'POST', body: JSON.stringify({ correo }) });
+  delete b.dataset.enviando; b.textContent = antes;
+
+  const cuerpo = r.cuerpo || {};
+  // Si el servidor frenó o rechazó, hay que DECIRLO: antes se pintaba "Revisa tu
+  // correo" pasara lo que pasara, e invitaba a reintentar y gastar más cupo.
+  if (!r.ok || cuerpo.error) {
+    return avisar('#aviso-dlg', cuerpo.error || 'No se pudo mandar el enlace. Inténtalo en un rato.');
+  }
   $('#av-titulo').textContent = 'Revisa tu correo';
-  $('#av-texto').textContent = (cuerpo && cuerpo.enviado)
+  $('#av-texto').textContent = cuerpo.enviado
     ? `Te mandamos un enlace a ${correo}. Ábrelo y entras directo, sin contraseña. Vence en 20 minutos.`
-    : `Tu cuenta quedó creada, pero el envío de correos falló. Inténtalo de nuevo en un momento.`;
+    : `No pudimos mandarte el correo ahora mismo. Inténtalo de nuevo en un momento.`;
   mostrar('aviso');
 }
 
