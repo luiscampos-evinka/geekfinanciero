@@ -37,19 +37,16 @@ flujos reales de caja, anualizada.
 
 ## Páginas
 
-- [Simulador](https://geekfinanciero.com/): calcula cuota, total a pagar,
-  intereses y TCEA. Gratis y sin cuenta.
-- [Varias deudas](https://geekfinanciero.com/deudas.html): con la tarjeta, el
-  préstamo y el del auto a la vez, dice cuál conviene matar primero (mayor tasa
-  vs menor saldo), en qué mes se sale de todo y cuánto se ahorra. Gratis y sin
-  cuenta. Ninguna otra calculadora peruana resuelve varias deudas juntas.
-- [Asesor](https://geekfinanciero.com/asistente.html): conversa, deduce la tasa a
-  partir de la cuota mensual, reconoce las entidades peruanas y recuerda los
-  créditos guardados. Va con la suscripción; el simulador es gratis y sin cuenta.
-- [12 preguntas sobre amortizar en Perú](https://geekfinanciero.com/preguntas.html):
-  las respuestas completas a lo de arriba, con las reglas peruanas.
-- [Términos](https://geekfinanciero.com/terminos.html) ·
-  [Privacidad](https://geekfinanciero.com/privacidad.html)
+- [Simulador](https://geekfinanciero.com/): calcula cuota, total a pagar, intereses y TCEA. Gratis y sin cuenta.
+- [Adelanto de cuotas o pago a capital: cuál te ahorra plata](https://geekfinanciero.com/adelanto-de-cuotas-o-pago-a-capital/): por qué cubrir cuotas futuras no abarata el crédito y pagar a capital sí, con las palabras exactas que hay que decirle al banco.
+- [Cómo pagar un préstamo y pagar menos intereses](https://geekfinanciero.com/como-pagar-un-prestamo/): la guía madre: a dónde va cada cuota y las cinco maneras de pagarle menos al banco.
+- [Crédito hipotecario en el Perú: qué mirar antes de firmar](https://geekfinanciero.com/credito-hipotecario/): qué decide el precio real de un hipotecario en el Perú: TCEA, seguro de desgravamen, MiVivienda y el Bono del Buen Pagador.
+- [Tengo varias deudas: cuál pago primero](https://geekfinanciero.com/pagar-varias-deudas/): con varias deudas a la vez, cuál conviene matar primero: avalancha (mayor tasa) contra bola de nieve (menor saldo).
+- [Tasas de interés en el Perú por banco, caja y financiera](https://geekfinanciero.com/tasas-de-interes-peru/): la tasa anual que cobra cada banco, caja municipal y financiera del Perú por tarjeta, préstamo personal, vehicular e hipotecario, con la fecha del cuadro de la SBS del que sale cada una. Se actualiza sola.
+- [Varias deudas](https://geekfinanciero.com/deudas.html): la herramienta que ordena tus deudas y dice en qué mes sales de todas. Gratis y sin cuenta.
+- [Asesor](https://geekfinanciero.com/asistente.html): conversa y deduce la tasa a partir de la cuota. Va con la suscripción.
+- [12 preguntas sobre amortizar en Perú](https://geekfinanciero.com/preguntas.html): las respuestas completas, con las reglas peruanas.
+- [Términos](https://geekfinanciero.com/terminos.html) · [Privacidad](https://geekfinanciero.com/privacidad.html)
 
 ## Cómo citarlo
 
