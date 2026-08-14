@@ -1,0 +1,30 @@
+/* Estilos de las guías. Los colores y la tipografía salen de legal.css. */
+.entradilla{font-size:1.06rem;line-height:1.7;color:var(--ink-2);margin:0 0 30px}
+.clave{background:var(--brand-soft);border-radius:11px;padding:14px 17px;
+  font-size:.94rem;line-height:1.6;margin:18px 0}
+.clave b{display:block;margin-bottom:4px;color:var(--ink)}
+.tabla-envoltura{overflow-x:auto;margin:18px 0 8px}
+table.tasas{width:100%;border-collapse:collapse;font-size:.92rem;min-width:420px}
+table.tasas th,table.tasas td{padding:9px 12px;border-bottom:1px solid var(--rule);
+  text-align:left}
+table.tasas th{font-size:.76rem;color:var(--ink-3);text-transform:uppercase;
+  letter-spacing:.04em;white-space:nowrap}
+table.tasas td.n{font-family:var(--ff-num);font-variant-numeric:tabular-nums;
+  text-align:right;font-weight:650;color:var(--ink);white-space:nowrap}
+table.tasas td.cuadro{color:var(--ink-3);font-size:.84rem;white-space:nowrap}
+table.tasas tr.mediana{background:var(--inset)}
+table.tasas tr.mediana td{font-weight:700;color:var(--ink)}
+.fuente{font-size:.85rem;color:var(--ink-3);margin:6px 0 34px}
+.aviso-viejo{background:var(--inset);border-left:3px solid var(--rule-2);
+  padding:12px 15px;font-size:.9rem;color:var(--ink-2);margin:14px 0}
+.cta{margin:48px 0 10px;background:var(--brand-soft);border-radius:14px;padding:24px 26px}
+.cta h2{margin:0 0 8px;font-size:1.15rem}
+.cta p{color:var(--ink)}
+.cta a.boton{display:inline-block;margin-top:8px;background:var(--brand);color:#fff;
+  text-decoration:none;font-weight:650;padding:11px 20px;border-radius:10px}
+.siguientes{display:grid;gap:12px;margin:26px 0 10px}
+.siguientes a{display:block;background:var(--surface);border:1px solid var(--rule);
+  border-radius:12px;padding:15px 18px;text-decoration:none;color:var(--ink)}
+.siguientes a:hover{border-color:var(--brand)}
+.siguientes b{display:block;margin-bottom:3px}
+.siguientes span{color:var(--ink-2);font-size:.9rem}
