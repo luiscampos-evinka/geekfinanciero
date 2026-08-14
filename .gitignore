@@ -1,0 +1,6 @@
+# Andamiaje de las sesiones de trabajo: no es parte del sitio.
+.superpowers/
+
+# Caché de Python de las herramientas.
+__pycache__/
+*.pyc
