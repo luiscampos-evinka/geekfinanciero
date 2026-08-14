@@ -224,7 +224,7 @@ button.ghost:hover{background:var(--brand-soft)}
 
 .seg{display:inline-flex;flex-wrap:wrap;max-width:100%;background:var(--inset);
   border:1px solid var(--rule);border-radius:10px;padding:3px;gap:3px}
-@media (max-width:600px){ .seg{display:flex} .seg label{flex:1 1 auto;text-align:center;white-space:normal} }
+@media (max-width:600px){ .seg{display:flex} .seg label,.seg>a{flex:1 1 auto;text-align:center;white-space:normal;justify-content:center} }
 .seg label{
   position:relative;font-size:.85rem;font-weight:650;color:var(--ink-2);
   padding:7px 13px;border-radius:7px;cursor:pointer;white-space:nowrap;
@@ -234,6 +234,26 @@ button.ghost:hover{background:var(--brand-soft)}
 .seg label:hover{color:var(--ink)}
 .seg label:has(input:checked){background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.09)}
 .seg label:has(input:focus-visible){outline:2px solid var(--brand);outline-offset:1px}
+/* Enlaces a las herramientas que viven en otra página: mismo aspecto de pestaña. */
+.seg>a{
+  display:flex;align-items:center;gap:6px;text-decoration:none;
+  font-size:.85rem;font-weight:650;color:var(--ink-2);
+  padding:7px 13px;border-radius:7px;white-space:nowrap;
+  transition:background .14s ease,color .14s ease;
+}
+.seg>a:hover{color:var(--ink);background:var(--surface)}
+.seg>a:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+.seg>a i{font-style:normal;font-size:.72rem;font-weight:600;opacity:.6}
+/* En móvil las cuatro herramientas van en rejilla 2x2: se ven todas y quedan parejas.
+   Solo esta barra — los demás .seg (moneda, tipo de entrada) siguen como estaban. */
+@media (max-width:600px){
+  /* minmax(0,1fr) y no 1fr: si no, la celda más larga se lleva más ancho y quedan disparejas. */
+  .seg.herramientas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+  .seg.herramientas label,.seg.herramientas>a{display:flex;align-items:center;
+    justify-content:center;text-align:center;flex-wrap:wrap;gap:0 6px}
+  /* El matiz baja siempre a su propia línea: si no, «gratis» se descuelga y «suscripción» no. */
+  .seg.herramientas>a i{flex-basis:100%}
+}
 
 /* ---------- pasos ---------- */
 .paso{
@@ -463,6 +483,8 @@ input[type=month]:focus,select:focus{outline:none;border-color:var(--brand);
 @media (max-width:430px){ .pro .rejilla{grid-template-columns:1fr 1fr} .pro .it svg{height:38px} }
 
 /* ---------- atajo al asistente ---------- */
+.mas-herramientas{display:flex;flex-direction:column;gap:12px}
+.mas-herramientas h2{font-size:1.05rem;margin:0 0 2px;color:var(--ink-2);font-weight:650}
 .atajo-ia{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;
   background:var(--brand-soft);border:1px solid transparent;border-radius:14px;
   padding:14px 18px;transition:border-color .18s,transform .18s}
@@ -644,36 +666,11 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
     </div>
   </header>
 
-  <a class="atajo-ia no-print" href="/deudas.html">
-    <span class="chispa" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="19" height="19" fill="none">
-        <path d="M12 3l1.6 4.7L18 9.4l-4.4 1.7L12 16l-1.6-4.9L6 9.4l4.4-1.7L12 3z"
-              fill="currentColor"/>
-        <path d="M18.5 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" fill="currentColor" opacity=".7"/>
-      </svg>
-    </span>
-    <span class="txt"><b>¿Tienes más de una deuda?</b>
-      La tarjeta, el préstamo y el del auto: te decimos cuál conviene matar primero
-      y en qué mes quedas libre. Gratis y sin cuenta.</span>
-    <span class="flecha" aria-hidden="true">→</span>
-  </a>
-<a class="atajo-ia no-print" href="/asistente.html">
-    <span class="chispa" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="19" height="19" fill="none">
-        <path d="M12 3l1.6 4.7L18 9.4l-4.4 1.7L12 16l-1.6-4.9L6 9.4l4.4-1.7L12 3z"
-              fill="currentColor"/>
-        <path d="M18.5 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" fill="currentColor" opacity=".7"/>
-      </svg>
-    </span>
-    <span class="txt"><b>¿Prefieres contármelo hablando?</b>
-      El asesor te deduce la tasa desde lo que pagas al mes y recuerda tus créditos.
-      Va con la suscripción.</span>
-    <span class="flecha" aria-hidden="true">→</span>
-  </a>
-
-  <div class="seg no-print" role="radiogroup" aria-label="Modo" style="align-self:flex-start">
+  <div class="seg herramientas no-print" role="group" aria-label="Herramientas" style="align-self:flex-start">
     <label><input type="radio" name="vista" value="sim" checked><span>Mi crédito</span></label>
     <label><input type="radio" name="vista" value="cmp"><span>Comparar dos créditos</span></label>
+    <a href="/deudas.html">Varias deudas <i>gratis</i></a>
+    <a href="/asistente.html">El asesor <i>suscripción</i></a>
   </div>
 
   <!-- ============ SIMULADOR ============ -->
@@ -1181,6 +1178,38 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
       </div>
     </section>
   </div>
+
+  <section class="mas-herramientas no-print">
+    <h2>Otras dos cosas que puedes hacer aquí</h2>
+
+    <a class="atajo-ia" href="/deudas.html">
+      <span class="chispa" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none">
+          <path d="M12 3l1.6 4.7L18 9.4l-4.4 1.7L12 16l-1.6-4.9L6 9.4l4.4-1.7L12 3z"
+                fill="currentColor"/>
+          <path d="M18.5 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" fill="currentColor" opacity=".7"/>
+        </svg>
+      </span>
+      <span class="txt"><b>¿Tienes más de una deuda?</b>
+        La tarjeta, el préstamo y el del auto: te decimos cuál conviene matar primero
+        y en qué mes quedas libre. Gratis y sin cuenta.</span>
+      <span class="flecha" aria-hidden="true">→</span>
+    </a>
+
+    <a class="atajo-ia" href="/asistente.html">
+      <span class="chispa" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none">
+          <path d="M12 3l1.6 4.7L18 9.4l-4.4 1.7L12 16l-1.6-4.9L6 9.4l4.4-1.7L12 3z"
+                fill="currentColor"/>
+          <path d="M18.5 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" fill="currentColor" opacity=".7"/>
+        </svg>
+      </span>
+      <span class="txt"><b>¿Prefieres contármelo hablando?</b>
+        El asesor te deduce la tasa desde lo que pagas al mes y recuerda tus créditos.
+        Va con la suscripción.</span>
+      <span class="flecha" aria-hidden="true">→</span>
+    </a>
+  </section>
 
   <footer class="foot">
     <span>Simulador de créditos · basado en la plantilla de Julio Campos</span>
