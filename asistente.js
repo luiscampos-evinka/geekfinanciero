@@ -167,7 +167,16 @@
     // Si dice que ya depositó, se le ofrece anotarlo. Se ofrece: lo confirma ella.
     if (d.registrar) msg.insertAdjacentHTML('beforeend', botonAnotar(d.registrar));
 
-    if (d.resultado) pinta(d.resultado, d.campos);
+    /* `resultados` son TODOS los cálculos del turno, en el orden en que el
+       asesor los pidió; `resultado` es el primero de esa lista y sigue
+       llegando para que un sitio y un Worker desplegados con desfase no dejen
+       a nadie sin panel. Se pintan todos: cuando la pregunta necesita dos —«me
+       prestan 20 mil al 45 % a 24 meses, ¿esa tasa está cara?» pide la
+       simulación Y las tasas—, enseñar uno solo esconde un cálculo que el
+       asesor acaba de decir con todas sus letras en su respuesta. */
+    const calculos = Array.isArray(d.resultados) && d.resultados.length ? d.resultados
+      : d.resultado ? [d.resultado] : [];
+    if (calculos.length) pinta(calculos, d.campos);
     else if (sigueSiendoDeAqui(d.campos)) marcaComoPrevio();
     else { salida.innerHTML = ''; ultimo = null; }
   }
@@ -478,17 +487,25 @@
       plazo + explicaBrecha + siguiente;
   }
 
-  /** El panel del turno: se dibuja el cálculo y se anota con qué firma, para
-   *  que el turno siguiente sepa si sigue siendo la respuesta a esta
-   *  conversación. */
-  function pinta(r, c) {
-    const html = r.herramienta === 'comparar_creditos' ? pintaComparacion(r)
-      : r.herramienta === 'plan_de_deudas' ? pintaPlanDeDeudas(r)
-      : r.herramienta === 'consultar_tasas' ? pintaTasas(r)
-      : pintaCredito(r, c);
+  /** El HTML de UN cálculo, el que le toque por su herramienta. */
+  const unPanel = (r, c) =>
+    r.herramienta === 'comparar_creditos' ? pintaComparacion(r)
+    : r.herramienta === 'plan_de_deudas' ? pintaPlanDeDeudas(r)
+    : r.herramienta === 'consultar_tasas' ? pintaTasas(r)
+    : pintaCredito(r, c);
+
+  /** Los paneles del turno, uno debajo de otro y en el orden en que el asesor
+   *  pidió los cálculos, cada uno anotado con su firma para que el turno
+   *  siguiente sepa si siguen siendo la respuesta a esta conversación.
+   *
+   *  Son varios porque un turno puede traer varios: el servidor devolvía un
+   *  solo `resultado` y el segundo cálculo borraba al primero (C1). Aquí eso
+   *  se veía como un panel de tasas debajo de una respuesta que hablaba
+   *  además de una cuota que no estaba en ninguna parte. */
+  function pinta(lista, c) {
     salida.dataset.previo = '';
-    salida.innerHTML = html;
-    ultimo = { paneles: [{ herramienta: r.herramienta, firma: firmaPanel(r, c) }] };
+    salida.innerHTML = lista.map(r => unPanel(r, c)).join('');
+    ultimo = { paneles: lista.map(r => ({ herramienta: r.herramienta, firma: firmaPanel(r, c) })) };
   }
 
   /* ---------- la puerta: el asesor va con la suscripción ---------- */
