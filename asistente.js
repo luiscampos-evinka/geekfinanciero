@@ -122,6 +122,9 @@
   async function hablar(txt) {
     if (ocupado) return;
     ocupado = true; enviar.disabled = true;
+    // El asesor no es un paso del embudo: se usa en cualquier momento. Pero sí
+    // interesa saber cuánta gente le llega a escribir de verdad.
+    try { if (window.mide) window.mide('uso_asesor'); } catch (e) {}
     historial.push({ rol: 'yo', texto: txt });
     mensaje('yo', txt);
     texto.value = ''; cuenta();

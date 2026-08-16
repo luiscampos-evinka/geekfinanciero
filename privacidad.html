@@ -28,18 +28,22 @@
   </div>
 
   <div class="destacado">
-    <p><strong>Lo esencial:</strong> el simulador funciona <b>entero dentro de tu navegador</b>.
-    Los montos, tasas y plazos que escribes <b>no se envían a ningún servidor</b> mientras no
-    tengas cuenta. Si no te registras, no sabemos nada de ti.</p>
+    <p><strong>Lo esencial:</strong> para hacer el cálculo, los montos, tasas y plazos que
+    escribes <b>sí viajan a nuestro servidor</b>, pero <b>no se guardan en ninguna base de
+    datos</b>: se usan para responderte y se descartan. Solo quedan almacenados los créditos que
+    tú decides guardar, y para eso hace falta una cuenta. Si no te registras, no sabemos quién
+    eres.</p>
   </div>
 
   <h2>1. Qué datos tratamos</h2>
 
   <h3>Si solo usas el simulador</h3>
-  <p><strong>Ninguno.</strong> Los cálculos se hacen en tu propio navegador y los datos que
-  escribes se quedan ahí. Si tu navegador lo permite, se guardan en tu equipo
-  (<em>localStorage</em>) solo para que no los pierdas al recargar la página. Los borras
-  limpiando los datos del sitio en tu navegador.</p>
+  <p><strong>Ninguno que te identifique.</strong> El cálculo lo hace nuestro servidor, así que el
+  monto, la tasa y el plazo que escribes viajan hasta él en cada simulación. <strong>No se
+  guardan</strong>: se calculan, se te devuelven y se descartan; no van a ninguna tabla ni quedan
+  asociados a nadie. Si tu navegador lo permite, se quedan además en tu propio equipo
+  (<em>localStorage</em>) para que no los pierdas al recargar la página. Los borras limpiando los
+  datos del sitio en tu navegador.</p>
 
   <h3>Si creas una cuenta</h3>
   <ul>
@@ -102,11 +106,19 @@
   <p><strong>No usamos cookies de publicidad ni de seguimiento</strong>, ni Google Analytics ni
   píxeles de redes sociales. Por eso este sitio no te muestra un banner de cookies: no hay nada
   que consentir.</p>
-  <p><strong>Sí contamos cuántas visitas recibe el sitio</strong>, con Cloudflare Web Analytics.
-  No deja cookies, no guarda ningún identificador en tu navegador y no te sigue de una página web
-  a otra: solo suma páginas vistas, y de qué país y qué buscador llegan, en conjunto. No hay
-  manera de saber que una de esas visitas eres tú. Y no se activa en tu panel, en el asistente ni
-  en la herramienta de deudas.</p>
+  <p><strong>Sí medimos cómo se usa el sitio</strong>, de dos maneras. Ninguna de las dos deja
+  cookies, guarda tu IP ni te sigue de una página web a otra:</p>
+  <ul>
+    <li><strong>Cloudflare Web Analytics</strong>, solo en las páginas públicas. Suma páginas
+    vistas y de qué país y qué buscador llegan, en conjunto, sin dejar ningún identificador en tu
+    navegador. No se activa en tu panel, en el asistente ni en la herramienta de deudas.</li>
+    <li><strong>Nuestra propia medición del recorrido</strong>, en todo el sitio. Sirve para saber
+    en qué punto se queda la gente: cuántos calculan una cuota, cuántos llegan hasta el muro de
+    suscripción, cuántos guardan un crédito. Usa un número aleatorio que vive en tu navegador
+    mientras la pestaña está abierta y <b>desaparece al cerrarla</b>, así que no sirve para
+    reconocerte mañana. Junto a esos pasos <b>no se guarda tu correo</b>, ni siquiera cuando has
+    iniciado sesión: solo si había una sesión abierta o no.</li>
+  </ul>
 
   <h2>6. Cuánto tiempo los guardamos</h2>
   <ul>
@@ -150,5 +162,6 @@
 </main>
 <!-- Medimos visitas con Cloudflare Web Analytics: sin cookies y sin identificar a nadie. -->
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "cb2d380751a64f0e8853e9ce54735a5b"}'></script>
+<script src="/medir.js" defer></script>
 </body>
 </html>

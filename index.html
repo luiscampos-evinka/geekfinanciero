@@ -1331,6 +1331,11 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
 (() => {
 "use strict";
 
+/* Marcar un paso del embudo. La analítica vive en /medir.js y carga con
+   `defer`, así que puede no estar lista todavía cuando algo intente medir muy
+   temprano: por eso la guarda. Medir jamás puede tumbar la página. */
+const paso = n => { try { if (window.mide) window.mide(n); } catch (e) {} };
+
 /* ============================================================
    1. MOTOR FINANCIERO
    ============================================================ */
@@ -1647,6 +1652,7 @@ async function recalcular() {
   if (mio !== pidiendo) return;
   if (!ok || !cuerpo || !cuerpo.gratis) return avisarSinCuentas();
   ultimo = { cfg, r: cuerpo };
+  paso('calculo');
   sinRed(false);
   pintarSimulacion();
   guardar();
@@ -2569,7 +2575,7 @@ async function irAPagar() {
     method: 'POST',
     body: JSON.stringify({ cupon: (c => c && c.cupon ? c.cupon.codigo : null)(cuponVigente()) }),
   });
-  if (ok && cuerpo && cuerpo.ir) { location.href = cuerpo.ir; return; }
+  if (ok && cuerpo && cuerpo.ir) { paso('abrio_pago'); location.href = cuerpo.ir; return; }
   boton.disabled = false; boton.textContent = 'Suscribirme';
   av.innerHTML = `<div class="aviso-cuenta mal">${(cuerpo && cuerpo.error) || 'No se pudo iniciar el pago.'}</div>`;
 }
@@ -2631,7 +2637,7 @@ async function guardarCredito() {
     }),
   });
   const av = $('#muro-resultado');
-  if (ok) av.innerHTML = `<div class="aviso-cuenta ok">Guardado. Ya puedes volver cuando quieras.</div>`;
+  if (ok) { paso('guardo_credito'); av.innerHTML = `<div class="aviso-cuenta ok">Guardado. Ya puedes volver cuando quieras.</div>`; }
   else if (estado === 402) { await refrescarCuenta(); }
   else av.innerHTML = `<div class="aviso-cuenta mal">${(cuerpo && cuerpo.error) || 'No se pudo guardar.'}</div>`;
 }
@@ -2720,7 +2726,7 @@ const avisar = (donde, texto, bien = false) => {
   if (el) el.innerHTML = `<div class="aviso-cuenta ${bien ? 'ok' : 'mal'}">${texto}</div>`;
 };
 
-function abrirEntrar() { mostrar('entrar'); }
+function abrirEntrar() { paso('abrio_registro'); mostrar('entrar'); }
 
 /** Identificador del equipo: lo genera el navegador y vive solo aquí. */
 function idDispositivo() {
@@ -2814,6 +2820,10 @@ async function confirmarCodigo() {
     method: 'POST',
     body: JSON.stringify({ correo: correoEnCurso, codigo, dispositivo: idDispositivo() }),
   });
+  /* Aquí es donde la cuenta queda creada de verdad. Medirlo en `crearCuenta`
+     contaría también a quien pide el código y nunca lo confirma. El segundo
+     paso de una cuenta que ya existía no es un alta, así que no cuenta. */
+  if (r && r.ok && tipoCodigo !== 'dos-pasos') paso('se_registro');
   b.disabled = false; b.textContent = 'Confirmar';
   await trasIntentar(r, '#aviso-codigo');
 }
@@ -2924,6 +2934,22 @@ $('#view-sim').hidden = !$('#view-cmp').hidden;
 
 // gancho de pruebas: permite verificar la matemática desde la consola
 conectarCuenta();
+
+/* «Topó con el muro» no es «el muro existe»: para quien no está suscrito, el
+   muro está destapado desde que carga la página, así que contarlo ahí sería
+   contar exactamente lo mismo que las visitas. Lo que interesa saber es
+   cuánta gente bajó hasta él y lo tuvo delante de los ojos — o sea, llegó al
+   punto donde le pedimos pagar. Eso es lo que mide este observador. */
+(() => {
+  const muro = $('#muro-premium');
+  if (!muro || !window.IntersectionObserver) return;
+  const ojo = new IntersectionObserver(entradas => {
+    for (const e of entradas) {
+      if (e.isIntersecting && !muro.hidden) { paso('topo_muro'); ojo.disconnect(); }
+    }
+  }, { threshold: 0.4 });
+  ojo.observe(muro);
+})();
 
 // Puerta para las pruebas: solo se abre con el archivo local o en localhost,
 // y ya ni siquiera tiene el motor que enseñar —ese vive en el servidor—.
