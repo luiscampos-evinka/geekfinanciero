@@ -36,23 +36,53 @@
   const charla = $('#charla'), texto = $('#texto'), enviar = $('#enviar'), salida = $('#salida');
   let historial = [], previo = {}, ocupado = false;
 
-  /* El último cálculo pintado, con la FIRMA del caso al que pertenece. El panel
-     era de un solo turno: preguntar «¿y qué es la TCEA?» lo borraba, porque
-     `resultado` solo llega en los turnos en que el asesor llama a la
-     herramienta. Ahora se queda mientras la conversación siga siendo del mismo
-     crédito, y se va en cuanto deja de serlo: unas cifras de otro crédito
-     debajo de la respuesta son peores que ninguna. */
-  let ultimo = null;
+  /* Lo que hay pintado ahora mismo: un panel por cálculo, cada uno con su
+     herramienta y la FIRMA del caso que enseña. El panel era de un solo turno:
+     preguntar «¿y qué es la TCEA?» lo borraba, porque `resultado` solo llega en
+     los turnos en que el asesor llama a la herramienta. Se queda mientras la
+     conversación siga siendo de lo mismo, y se va en cuanto deja de serlo: unas
+     cifras de otro caso debajo de la respuesta son peores que ninguna. */
+  let ultimo = null;              // { paneles: [{ herramienta, firma }] }
+
+  /** Cuáles de las herramientas de cálculo pintan un CRÉDITO. Es la misma
+   *  pregunta que decide qué panel se dibuja y cómo se firma, así que se
+   *  contesta en un solo sitio: firmar por un lado y pintar por otro es como
+   *  se llegó a un panel que se borraba a sí mismo. */
+  const esCredito = h => h !== 'comparar_creditos' && h !== 'plan_de_deudas' && h !== 'consultar_tasas';
 
   /** Qué crédito es este: el principal, la tasa y el plazo. Si cambia alguno,
    *  las cifras de arriba ya no son de esta conversación. */
-  function firma(c) {
+  function firmaCredito(c) {
     if (!c) return '';
     const principal = c.precio > 0
       ? Math.max(0, c.precio - c.precio * (c.inicialPct || 0) / 100 - (c.bono || 0))
       : c.monto;
     return [principal || 0, c.tea || 0, c.meses || 0].join('|');
   }
+
+  /** La firma de un panel: QUÉ caso tiene pintado.
+   *
+   *  Del crédito se firma el caso —principal, tasa y plazo—, porque `campos`
+   *  lo trae en TODOS los turnos, traigan cálculo o no: el turno siguiente se
+   *  puede volver a calcular y saber si la conversación pasó a otro crédito.
+   *  De los otros tres se firma la HERRAMIENTA y sus ARGUMENTOS, que es lo
+   *  único que los identifica: `campos` no dice nada de una comparación ni de
+   *  un plan de deudas —el servidor no lo llena para esas—, así que firmarlos
+   *  por el crédito los ataría a un caso que no es el suyo, y dejarlos sin
+   *  firma —`ultimo = null`, que es lo que hacían— los borraba a la primera
+   *  pregunta que no llamara a ninguna herramienta. Preguntar «¿y qué es la
+   *  TCEA?» después de una comparación no la convierte en otra comparación. */
+  const firmaPanel = (r, c) =>
+    esCredito(r.herramienta) ? firmaCredito(c) : r.herramienta + '|' + JSON.stringify(r.args ?? null);
+
+  /** ¿Lo que hay pintado sigue siendo de esta conversación? Solo el panel del
+   *  crédito puede desmentirse con lo que trae un turno SIN cálculo: su firma
+   *  se recalcula desde `campos`. Los otros tres no tienen nada que
+   *  recalcular —sus argumentos no vuelven a viajar—, y no hay pregunta que
+   *  los convierta en otro caso: se quedan hasta que llegue un cálculo nuevo
+   *  que los reemplace. */
+  const sigueSiendoDeAqui = c => !!ultimo && ultimo.paneles.every(
+    p => !esCredito(p.herramienta) || p.firma === firmaCredito(c));
 
   /* ---------- la conversación ---------- */
   function mensaje(rol, txt) {
@@ -138,7 +168,7 @@
     if (d.registrar) msg.insertAdjacentHTML('beforeend', botonAnotar(d.registrar));
 
     if (d.resultado) pinta(d.resultado, d.campos);
-    else if (ultimo && firma(d.campos) === ultimo.firma) marcaComoPrevio();
+    else if (sigueSiendoDeAqui(d.campos)) marcaComoPrevio();
     else { salida.innerHTML = ''; ultimo = null; }
   }
 
@@ -242,10 +272,8 @@
    *  engaña, y es la confusión que más dinero le cuesta a la gente en Perú.
    *  `a.nombre`/`b.nombre`/`gana` los escribe el modelo: se escapan, nunca
    *  crudos. No hay `c` (campos) útil aquí —el servidor no lo llena para esta
-   *  herramienta—, así que no se ofrece el puente al simulador ni se marca
-   *  `ultimo`: sin una firma de verdad, mejor que el panel se borre en el
-   *  siguiente turno a que se quede sirviendo una comparación vieja como si
-   *  fuera la respuesta a otra cosa. */
+   *  herramienta—, así que no se ofrece el puente al simulador: `enlaceSimulador()`
+   *  armaría la URL de un crédito que no es ninguna de las dos ofertas. */
   function pintaComparacion(r) {
     const nombreA = esc(r.a.nombre), nombreB = esc(r.b.nombre);
     const tono = r.gana ? 'bien' : 'neutro';
@@ -270,9 +298,7 @@
       cifra(`«${nombre}» — TCEA`, tcea(o.tcea));
     const cifras = `<div class="cifras">${bloque(r.a, nombreA)}${bloque(r.b, nombreB)}</div>`;
 
-    salida.dataset.previo = '';
-    salida.innerHTML = titular + aviso + cifras;
-    ultimo = null;
+    return titular + aviso + cifras;
   }
 
   /** Plan de deudas (`plan_de_deudas`): cuál atacar primero, en qué mes queda
@@ -328,9 +354,7 @@
         `Alguna se quedó fuera por falta de saldo, cuota o tasa — revísalas y pregúntamelo otra vez.</div>`
       : '';
 
-    salida.dataset.previo = '';
-    salida.innerHTML = titular + cifras + nieve + descartadas;
-    ultimo = null;
+    return titular + cifras + nieve + descartadas;
   }
 
   /** Tasas de mercado (`consultar_tasas`): dónde queda tu tasa contra el
@@ -373,18 +397,17 @@
       `y no es contra eso que se compara tu tasa arriba.</p>`;
     const fuente = r.fuente ? `<p class="dePrevio">Fuente: ${esc(r.fuente)}.</p>` : '';
 
-    salida.dataset.previo = '';
-    salida.innerHTML = titular + cifras + nota + fuente;
-    ultimo = null;
+    return titular + cifras + nota + fuente;
   }
 
   /* Ya no calcula nada: el motor lo hizo en el servidor y el asesor lo leyó
-     antes de responder. Aquí solo se muestra. */
-  function pinta(r, c) {
-    if (r.herramienta === 'comparar_creditos') return pintaComparacion(r);
-    if (r.herramienta === 'plan_de_deudas') return pintaPlanDeDeudas(r);
-    if (r.herramienta === 'consultar_tasas') return pintaTasas(r);
+     antes de responder. Aquí solo se muestra.
 
+     Cada panel DEVUELVE su HTML en vez de escribir en `salida`: quien pinta es
+     `pinta()`, en un solo sitio, que es lo que permite firmarlos a todos con
+     el mismo criterio y —desde que un turno puede traer dos cálculos— poner
+     más de uno debajo del otro sin que el segundo borre al primero. */
+  function pintaCredito(r, c) {
     const avisos = [];
     // Una tasa deducida NO es la que dio el banco. Decirlo no es un detalle:
     // es la diferencia entre una estimación y un dato, y quien decide sobre
@@ -451,10 +474,21 @@
         <a class="suave" href="/preguntas.html">O leer cómo funciona</a>
       </div>` : '';
 
-    salida.dataset.previo = '';
-    salida.innerHTML = nota + comparacion + `<div class="cifras">${cifras}</div>` +
+    return nota + comparacion + `<div class="cifras">${cifras}</div>` +
       plazo + explicaBrecha + siguiente;
-    ultimo = { firma: firma(c) };
+  }
+
+  /** El panel del turno: se dibuja el cálculo y se anota con qué firma, para
+   *  que el turno siguiente sepa si sigue siendo la respuesta a esta
+   *  conversación. */
+  function pinta(r, c) {
+    const html = r.herramienta === 'comparar_creditos' ? pintaComparacion(r)
+      : r.herramienta === 'plan_de_deudas' ? pintaPlanDeDeudas(r)
+      : r.herramienta === 'consultar_tasas' ? pintaTasas(r)
+      : pintaCredito(r, c);
+    salida.dataset.previo = '';
+    salida.innerHTML = html;
+    ultimo = { paneles: [{ herramienta: r.herramienta, firma: firmaPanel(r, c) }] };
   }
 
   /* ---------- la puerta: el asesor va con la suscripción ---------- */
