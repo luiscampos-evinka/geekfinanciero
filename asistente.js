@@ -36,6 +36,24 @@
   const charla = $('#charla'), texto = $('#texto'), enviar = $('#enviar'), salida = $('#salida');
   let historial = [], previo = {}, ocupado = false;
 
+  /* El último cálculo pintado, con la FIRMA del caso al que pertenece. El panel
+     era de un solo turno: preguntar «¿y qué es la TCEA?» lo borraba, porque
+     `resultado` solo llega en los turnos en que el asesor llama a la
+     herramienta. Ahora se queda mientras la conversación siga siendo del mismo
+     crédito, y se va en cuanto deja de serlo: unas cifras de otro crédito
+     debajo de la respuesta son peores que ninguna. */
+  let ultimo = null;
+
+  /** Qué crédito es este: el principal, la tasa y el plazo. Si cambia alguno,
+   *  las cifras de arriba ya no son de esta conversación. */
+  function firma(c) {
+    if (!c) return '';
+    const principal = c.precio > 0
+      ? Math.max(0, c.precio - c.precio * (c.inicialPct || 0) / 100 - (c.bono || 0))
+      : c.monto;
+    return [principal || 0, c.tea || 0, c.meses || 0].join('|');
+  }
+
   /* ---------- la conversación ---------- */
   function mensaje(rol, txt) {
     const d = document.createElement('div');
@@ -99,7 +117,11 @@
     if (!d || d.error) { mensaje('mal', d?.error || 'Algo falló. Prueba otra vez.'); return; }
 
     historial.push({ rol: 'asesor', texto: d.respuesta });
-    previo = d.campos;
+    /* `previo` es la memoria de la conversación, y `teaDeducida` va dentro: sin
+       ella, el servidor no puede saber que la tasa que el modelo manda como
+       dato es la que dedujimos nosotros del recibo, y el aviso de «esto es una
+       estimación» desaparecía a partir del segundo turno. */
+    previo = { ...d.campos, teaDeducida: d.teaDeducida === true };
     const msg = mensaje('ia', d.respuesta);
     const f = fichas(d.campos, d.teaDeducida);
     if (f) msg.insertAdjacentHTML('beforeend', f);
@@ -108,7 +130,8 @@
     if (d.registrar) msg.insertAdjacentHTML('beforeend', botonAnotar(d.registrar));
 
     if (d.resultado) pinta(d.resultado, d.campos);
-    else salida.innerHTML = '';
+    else if (ultimo && firma(d.campos) === ultimo.firma) marcaComoPrevio();
+    else { salida.innerHTML = ''; ultimo = null; }
   }
 
   /* ---------- anotar un pago ya hecho ---------- */
@@ -147,6 +170,15 @@
     }
   });
 
+  /** Marca el panel como lo que es cuando el turno no trajo cálculo: las cifras
+   *  del último que sí lo trajo. Se pone una sola vez. */
+  function marcaComoPrevio() {
+    if (!ultimo || salida.dataset.previo === '1') return;
+    salida.dataset.previo = '1';
+    salida.insertAdjacentHTML('afterbegin',
+      '<p class="dePrevio">Estas cifras son de tu último cálculo.</p>');
+  }
+
   const plural = (n, s, p) => `${n} ${n === 1 ? s : p}`;
   const tcea = v => (v * 100).toFixed(2) + ' %';
 
@@ -175,6 +207,23 @@
         (r.mesesMenos > 0 ? ` y terminas ${plural(r.mesesMenos, 'mes', 'meses')} antes` : '') + '.'];
     }
     return '';
+  }
+
+  /** El enlace al simulador, con el caso ya cargado. Es el único puente del
+   *  asesor al cronograma mes a mes, y la salida cuando el asesor no alcanza. */
+  function enlaceSimulador(c) {
+    const p = new URLSearchParams();
+    if (c.precio > 0) {
+      p.set('precio', c.precio);
+      if (c.inicialPct) p.set('inicialPct', c.inicialPct);
+      if (c.bono) p.set('bono', c.bono);
+    } else if (c.monto > 0) p.set('monto', c.monto);
+    if (c.tea > 0) p.set('tea', c.tea);
+    if (c.meses > 0) p.set('meses', c.meses);
+    if (c.extra > 0) { p.set('extra', c.extra); p.set('mes', c.mes || 6); }
+    if (c.mensual > 0) p.set('mensual', c.mensual);
+    p.set('modo', c.objetivo === 'cuota' ? 'cuota' : 'plazo');
+    return '/?' + p.toString();
   }
 
   /* Ya no calcula nada: el motor lo hizo en el servidor y el asesor lo leyó
@@ -218,10 +267,31 @@
       ? `<p class="plazo">El crédito pasa de <b>${meses2texto(a.meses)}</b> a <b>${meses2texto(r.meses)}</b>.</p>`
       : '';
 
-    const explicaBrecha = '';
+    /* La brecha entre la TCEA y la tasa: es el desgravamen y los gastos, y es
+       lo único con lo que se comparan dos ofertas de verdad. Con una compra de
+       deuda no se enseña: ahí la TCEA es la del crédito nuevo y la tasa que
+       tenemos delante es la del viejo, así que la resta no significa nada. */
+    const brecha = !r.hayCompra && r.tcea != null && r.teaUsada > 0 ? r.tcea - r.teaUsada / 100 : NaN;
+    const explicaBrecha = isFinite(brecha) && brecha > 0.0005
+      ? `<p class="brecha">Tu costo real va <b>${nf(brecha * 100, 2)} puntos por encima</b> de la tasa:
+         eso es el desgravamen y los gastos. Es la cifra con la que se comparan bancos.</p>`
+      : '';
 
+    const hayExtra = c && (c.extra > 0 || c.mensual > 0);
+    const siguiente = c ? `
+      <div class="siguiente">
+        <h2>${hayExtra ? 'Míralo mes a mes' : '¿Y si pudieras pagar algo a capital?'}</h2>
+        <p>${hayExtra
+          ? 'Arriba tienes cuánto te ahorras. En el simulador ves el cronograma completo: en qué mes cae cada cuota y cómo baja la deuda.'
+          : 'Aunque sea la gratificación de un año. El simulador te dice cuánto se acorta y cuánto dejas de pagar.'}</p>
+        <a class="boton" href="${enlaceSimulador(c)}">Verlo en el simulador →</a>
+        <a class="suave" href="/preguntas.html">O leer cómo funciona</a>
+      </div>` : '';
+
+    salida.dataset.previo = '';
     salida.innerHTML = nota + comparacion + `<div class="cifras">${cifras}</div>` +
-      plazo + explicaBrecha;
+      plazo + explicaBrecha + siguiente;
+    ultimo = { firma: firma(c) };
   }
 
   /* ---------- la puerta: el asesor va con la suscripción ---------- */
