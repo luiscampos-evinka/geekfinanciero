@@ -86,6 +86,14 @@
   /* Una oferta que sale cara no puede pintarse igual que un ahorro. */
   .entendi.malo{background:#f8efd8;color:#1b1710}
   .entendi.malo b{color:#1b1710}
+  /* Y un ahorro tampoco puede pintarse igual que la nota gris de arriba: sin
+     estas dos, `titular()` (asistente.js) manda «bien» y «neutro» y caían en
+     el `.entendi` de siempre, sin contraste con ningún aviso informativo.
+     Con variables del tema, no colores fijos como `.malo`: ya se adaptan
+     solas al modo oscuro, sin necesitar una regla aparte. */
+  .entendi.bien{background:var(--brand-soft)}
+  .entendi.bien b{color:var(--brand)}
+  .entendi.neutro{background:var(--inset)}
   .dePrevio{font-size:.82rem;color:var(--ink-3);margin:0 0 12px}
   .plazo,.brecha{font-size:.92rem;color:var(--ink-2);line-height:1.6;margin:0 0 10px}
   .siguiente{background:var(--brand-soft);border-radius:14px;padding:22px 24px;margin-top:22px}
@@ -144,7 +152,7 @@
   <div id="salida"></div>
 
   <p class="aviso">Lo que escribes se usa solo para entender tu caso y no se guarda; si el asesor no
-  sabe resolver algo, queda anotado de forma anónima —sin tu correo— para poder mejorarlo. Las
+  sabe resolver algo, queda anotado sin quedar asociado a tu cuenta, para poder mejorarlo. Las
   cifras las calcula el mismo motor del simulador, no un modelo de lenguaje: la inteligencia
   artificial decide qué hay que calcular y te lo explica, pero los números salen del motor. Esto es
   una herramienta de cálculo con fines educativos, <b>no es asesoría financiera</b>.</p>

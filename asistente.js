@@ -288,7 +288,14 @@
       : '';
 
     const hayExtra = c && (c.extra > 0 || c.mensual > 0);
-    const siguiente = c ? `
+    /* `enlaceSimulador(c)` solo sabe leer los campos de UN crédito: la compra
+       no vive en `c` (vive en `r`, aparte, según el propio servidor), así que
+       con una compra de deuda delante el enlace manda siempre al crédito
+       VIEJO —el simulador no sabe leer una compra por URL— y quien hace clic
+       ve otra cuota que la que acaba de leer en el panel de arriba. Mejor no
+       ofrecer el puente que ofrecer uno que miente, y el título de todos
+       modos no venía a cuento justo después de comparar dos bancos. */
+    const siguiente = (c && !r.hayCompra) ? `
       <div class="siguiente">
         <h2>${hayExtra ? 'Míralo mes a mes' : '¿Y si pudieras pagar algo a capital?'}</h2>
         <p>${hayExtra
@@ -313,8 +320,9 @@
     ['ia', 'Anotado: BCP, dos años por delante. Me falta solo el monto. Está en tu estado de '
          + 'cuenta o en la app del banco.'],
     ['yo', 'me prestaron 20 mil'],
-    ['ia', 'Listo. Con esos tres datos deduje tu tasa y abajo tienes tu cuota, tus intereses y '
-         + 'tu costo real.'],
+    ['ia', 'Listo. Con esos tres datos deduje tu tasa: tu cuota es de S/ 900 al mes, pagas '
+         + 'S/ 1,600 de intereses en los dos años y tu costo real (TCEA) sale un poco más '
+         + 'arriba por el seguro.'],
   ];
 
   function muro(motivo) {
