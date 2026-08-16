@@ -114,7 +114,15 @@
 
     if (d?.error === 'entra_primero') return muro(401);
     if (d?.error === 'pago_requerido') return muro(402);
-    if (!d || d.error) { mensaje('mal', d?.error || 'Algo falló. Prueba otra vez.'); return; }
+    if (!d || d.error) {
+      /* El aviso salía y el panel se quedaba intacto justo debajo, así que las
+         cifras del turno anterior parecían la respuesta a lo que acababa de
+         fallar. No se borran —son suyas y siguen siendo ciertas—: se dice de
+         cuándo son. */
+      mensaje('mal', d?.error || 'Algo falló. Prueba otra vez.');
+      marcaComoPrevio();
+      return;
+    }
 
     historial.push({ rol: 'asesor', texto: d.respuesta });
     /* `previo` es la memoria de la conversación, y `teaDeducida` va dentro: sin
@@ -180,7 +188,9 @@
   }
 
   const plural = (n, s, p) => `${n} ${n === 1 ? s : p}`;
-  const tcea = v => (v * 100).toFixed(2) + ' %';
+  // El costo real solo se conoce si la TIR convergió: el motor manda null si no,
+  // y un «0.00 %» ahí es una cifra falsa, no un dato que falta.
+  const tcea = v => v == null ? '—' : nf(v * 100, 2) + ' %';
 
   /** El titular de la comparación. Un ahorro NEGATIVO no es un ahorro: es lo
    *  que esa oferta te cuesta de más, y se dice con esas palabras y con ese
