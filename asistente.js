@@ -311,8 +311,18 @@
   }
 
   /** Plan de deudas (`plan_de_deudas`): cuál atacar primero, en qué mes queda
-   *  libre de todas y cuánto ahorra frente a pagarlas sin ningún orden.
-   *  `mesesLibre` y `ahorro` llegan `null` cuando ni en 600 meses se libera:
+   *  libre de todas y cuánto ahorra —con DOS cifras, que miden cosas
+   *  distintas y no se suman—.
+   *  · `ahorroPorElExtra`: lo que hace el dinero de más que puede poner cada
+   *    mes. Es 0 si no puede poner nada. Esta es la que salía rotulada
+   *    «Ahorras vs. sin orden» y contada como el mérito de ordenar las deudas:
+   *    el escenario contra el que se mide lleva el MISMO orden, solo que sin
+   *    extra, así que atribuírselo al orden es felicitar a la estrategia por
+   *    la plata que puso la persona.
+   *  · `ahorroPorElOrden`: lo que vale atacar por avalancha en vez de por bola
+   *    de nieve, con el mismo dinero. Esta sí es la del orden, y es la única
+   *    que decide esta herramienta.
+   *  Los dos y `mesesLibre` llegan `null` cuando ni en 600 meses se libera:
    *  eso no es un cero, es «no alcanza», y se dice con esas palabras, nunca
    *  con `soles(null)` o un plazo inventado.
    *
@@ -331,8 +341,9 @@
     let tono = 'neutro', cola = '';
     if (r.mesesLibre != null) {
       frases.push(`así quedas libre de todas en ${meses2texto(r.mesesLibre)}`);
-      if (r.ahorro != null && r.ahorro > 0) {
-        frases.push(`ahorrando ${soles(r.ahorro, 0)} en intereses frente a pagarlas sin ningún orden`);
+      if (r.ahorroPorElExtra > 0) {
+        frases.push(`y con el extra que puedes poner ahorras ${soles(r.ahorroPorElExtra, 0)} en ` +
+          `intereses frente a seguir pagando lo mismo de hoy`);
         tono = 'bien';
       }
     } else {
@@ -346,7 +357,10 @@
       `<div class="cifra${alta ? ' alta' : ''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;
     const cifras = `<div class="cifras">` +
       cifra('Quedas libre en', r.mesesLibre != null ? meses2texto(r.mesesLibre) : '—', true) +
-      cifra('Ahorras vs. sin orden', r.ahorro != null ? soles(r.ahorro, 0) : '—') +
+      // Cada casilla dice lo que de verdad mide. La de antes decía «Ahorras
+      // vs. sin orden» y enseñaba lo que había hecho el dinero extra.
+      cifra('Ahorras con el extra', r.ahorroPorElExtra != null ? soles(r.ahorroPorElExtra, 0) : '—') +
+      cifra('Ganas por este orden', r.ahorroPorElOrden != null ? soles(r.ahorroPorElOrden, 0) : '—') +
       cifra('Deudas en el plan', String(r.cuantas)) +
       cifra('Saldo total', soles(r.totalSaldo, 0)) +
       cifra('Cuota total al mes', soles(r.totalCuota, 0)) +
@@ -354,7 +368,11 @@
 
     const nieve = (r.primeroNieve && r.primeroNieve !== r.primeroAvalancha)
       ? `<p class="plazo">Si prefieres tachar una deuda pronto para sentir que avanzas, empieza por ` +
-        `«${nombreNieve}», la de menor saldo — ahorra menos, pero se siente más rápido.</p>`
+        `«${nombreNieve}», la de menor saldo — se siente más rápido, y` +
+        (r.ahorroPorElOrden > 0
+          ? ` cuesta ${soles(r.ahorroPorElOrden, 0)} más en intereses: eso, y solo eso, es lo que ` +
+            `vale el orden.</p>`
+          : ` ahorra menos.</p>`)
       : '';
 
     const enviadas = Array.isArray(r.args?.deudas) ? r.args.deudas.length : null;
