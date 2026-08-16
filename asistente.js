@@ -281,12 +281,14 @@
    *  eso no es un cero, es «no alcanza», y se dice con esas palabras, nunca
    *  con `soles(null)` o un plazo inventado.
    *
-   *  OJO: `cuantas` es lo único que este panel puede decir sobre cuántas
-   *  deudas entraron al cálculo. El contrato de hoy (`argsParaResultado()` en
-   *  `asesor.js`, repo API) no le hace llegar al navegador la lista original
-   *  de deudas que mandó el modelo, así que no hay con qué comparar `cuantas`
-   *  para avisar si alguna se descartó por el camino — se deja dicho en el
-   *  informe de esta tarea, no inventado aquí. */
+   *  `r.args.deudas` es la lista tal como la mandó el modelo, saneada por
+   *  `argsParaResultado()` (repo API, `asesor.js`); `r.cuantas` es cuántas
+   *  entraron DE VERDAD al cálculo, según lo reporta el motor
+   *  (`planDeAtaque()`, `src/planataque.js`). Hoy no deberían diferir —
+   *  `validaDeudas()` ya rechaza cualquier deuda sin saldo o cuota antes de
+   *  que el motor la vea—, pero si el día de mañana alguna se cae por el
+   *  camino, comparar las dos es la única manera de que esto no lo calle: un
+   *  `cuantas` correcto y mudo es indistinguible de un descarte silencioso. */
   function pintaPlanDeDeudas(r) {
     const nombreAval = esc(r.primeroAvalancha), nombreNieve = esc(r.primeroNieve);
 
@@ -320,8 +322,14 @@
         `«${nombreNieve}», la de menor saldo — ahorra menos, pero se siente más rápido.</p>`
       : '';
 
+    const enviadas = Array.isArray(r.args?.deudas) ? r.args.deudas.length : null;
+    const descartadas = (enviadas != null && r.cuantas < enviadas)
+      ? `<div class="entendi malo">Ojo: solo entraron <b>${r.cuantas} de ${enviadas}</b> deudas al plan. ` +
+        `Alguna se quedó fuera por falta de saldo, cuota o tasa — revísalas y pregúntamelo otra vez.</div>`
+      : '';
+
     salida.dataset.previo = '';
-    salida.innerHTML = titular + cifras + nieve;
+    salida.innerHTML = titular + cifras + nieve + descartadas;
     ultimo = null;
   }
 
