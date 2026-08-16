@@ -1336,6 +1336,16 @@ footer.foot{border-top:1px solid var(--rule);padding-top:18px;font-size:.8rem;co
    temprano: por eso la guarda. Medir jamás puede tumbar la página. */
 const paso = n => { try { if (window.mide) window.mide(n); } catch (e) {} };
 
+/* «Calculó» tiene que significar que la persona metió SUS números, no que la
+   página se pintó sola con el ejemplo de siempre. Al cargar, `recalcular()`
+   corre por su cuenta: marcarlo ahí contaría a todo el mundo y este paso
+   sería un calco de las visitas, que no responde nada. Así que solo cuenta a
+   partir del momento en que alguien toca un campo. */
+let tocado = false;
+for (const ev of ['input', 'change']) {
+  document.addEventListener(ev, () => { tocado = true; }, { capture: true, passive: true });
+}
+
 /* ============================================================
    1. MOTOR FINANCIERO
    ============================================================ */
@@ -1652,7 +1662,7 @@ async function recalcular() {
   if (mio !== pidiendo) return;
   if (!ok || !cuerpo || !cuerpo.gratis) return avisarSinCuentas();
   ultimo = { cfg, r: cuerpo };
-  paso('calculo');
+  if (tocado) paso('calculo');
   sinRed(false);
   pintarSimulacion();
   guardar();
