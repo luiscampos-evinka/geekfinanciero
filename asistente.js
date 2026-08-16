@@ -107,7 +107,7 @@
     // Si dice que ya depositó, se le ofrece anotarlo. Se ofrece: lo confirma ella.
     if (d.registrar) msg.insertAdjacentHTML('beforeend', botonAnotar(d.registrar));
 
-    if (d.resultado) pinta(d.resultado);
+    if (d.resultado) pinta(d.resultado, d.campos);
     else salida.innerHTML = '';
   }
 
@@ -147,9 +147,39 @@
     }
   });
 
+  const plural = (n, s, p) => `${n} ${n === 1 ? s : p}`;
+  const tcea = v => (v * 100).toFixed(2) + ' %';
+
+  /** El titular de la comparación. Un ahorro NEGATIVO no es un ahorro: es lo
+   *  que esa oferta te cuesta de más, y se dice con esas palabras y con ese
+   *  color. La mitad de las veces que alguien trae una oferta, esta es la
+   *  respuesta correcta. */
+  function titular(r) {
+    if (r.ahorro == null) return '';
+    if (r.hayCompra) {
+      if (r.ahorro > 0) {
+        return ['bien', `<b>Con la compra de deuda te ahorras ${soles(r.ahorro, 0)}</b> en intereses` +
+          (r.mesesMenos > 0 ? ` y terminas ${plural(r.mesesMenos, 'mes', 'meses')} antes` : '') + '.'];
+      }
+      if (r.ahorro < 0) {
+        return ['malo', `<b>Esta oferta te cuesta ${soles(-r.ahorro, 0)} más</b> en intereses que el ` +
+          'crédito que ya tienes' +
+          (r.mesesMenos < 0 ? `, y encima terminas de pagar ${plural(-r.mesesMenos, 'mes', 'meses')} después` : '') +
+          '.'];
+      }
+      return ['neutro', '<b>Con esa oferta acabas pagando prácticamente lo mismo.</b> ' +
+        'El cambio no te ahorra nada.'];
+    }
+    if (r.ahorro > 0) {
+      return ['bien', `<b>Con ese pago a capital te ahorras ${soles(r.ahorro, 0)}</b> en intereses` +
+        (r.mesesMenos > 0 ? ` y terminas ${plural(r.mesesMenos, 'mes', 'meses')} antes` : '') + '.'];
+    }
+    return '';
+  }
+
   /* Ya no calcula nada: el motor lo hizo en el servidor y el asesor lo leyó
      antes de responder. Aquí solo se muestra. */
-  function pinta(r) {
+  function pinta(r, c) {
     const avisos = [];
     // Una tasa deducida NO es la que dio el banco. Decirlo no es un detalle:
     // es la diferencia entre una estimación y un dato, y quien decide sobre
@@ -162,20 +192,36 @@
     }
     const nota = avisos.length ? `<div class="entendi">${avisos.join(' ')}</div>` : '';
 
-    const comparacion = r.hayCompra && r.ahorro != null ? `
-      <div class="entendi">
-        <b>Con la compra de deuda te ahorras ${soles(r.ahorro, 0)}</b>${
-          r.mesesMenos > 0 ? ` y terminas ${r.mesesMenos} meses antes` : ''}.
-      </div>` : '';
+    const t = titular(r);
+    const comparacion = t ? `<div class="entendi ${t[0]}">${t[1]}</div>` : '';
 
-    const cuotaTitulo = r.objetivoUsado === 'cuota' ? 'Tu cuota, ya con el abono' : 'Tu cuota';
-    salida.innerHTML = nota + comparacion + `
-      <div class="cifras">
-        <div class="cifra alta"><span class="k">${cuotaTitulo}</span><span class="v">${soles(r.cuota)}</span></div>
-        <div class="cifra"><span class="k">Pagarás en total</span><span class="v">${soles(r.total, 0)}</span></div>
-        <div class="cifra"><span class="k">De eso, intereses</span><span class="v">${soles(r.intereses, 0)}</span></div>
-        <div class="cifra"><span class="k">Tu costo real (TCEA)</span><span class="v">${(r.tcea * 100).toFixed(2)} %</span></div>
-      </div>`;
+    /* Las cuatro cifras son las del crédito que queda DESPUÉS —con la compra de
+       deuda, si la hay—, y debajo de cada una, lo que era antes. Estas cuatro
+       salían siempre del crédito SIN la compra: bajo el titular «te ahorras
+       694» se pintaban los números del crédito que la persona ya tenía. */
+    const a = r.antes;
+    const cifra = (k, v, previa, alta) =>
+      `<div class="cifra${alta ? ' alta' : ''}"><span class="k">${k}</span>` +
+      `<span class="v">${v}</span>${previa ? `<span class="antes">antes ${previa}</span>` : ''}</div>`;
+    const cambia = (x, y) => a && Math.abs(x - y) > 0.5;
+
+    const cuotaTitulo = r.hayCompra ? 'Tu cuota con la compra'
+      : r.objetivoUsado === 'cuota' ? 'Tu cuota, ya con el abono' : 'Tu cuota';
+    const cifras =
+      cifra(cuotaTitulo, soles(r.cuota), cambia(a && a.cuota, r.cuota) && soles(a.cuota), true) +
+      cifra('Pagarás en total', soles(r.total, 0), cambia(a && a.total, r.total) && soles(a.total, 0)) +
+      cifra('De eso, intereses', soles(r.intereses, 0), cambia(a && a.intereses, r.intereses) && soles(a.intereses, 0)) +
+      cifra('Tu costo real (TCEA)', tcea(r.tcea),
+        a && a.tcea != null && r.tcea != null && Math.abs(a.tcea - r.tcea) > 0.0001 && tcea(a.tcea));
+
+    const plazo = a && a.meses !== r.meses
+      ? `<p class="plazo">El crédito pasa de <b>${meses2texto(a.meses)}</b> a <b>${meses2texto(r.meses)}</b>.</p>`
+      : '';
+
+    const explicaBrecha = '';
+
+    salida.innerHTML = nota + comparacion + `<div class="cifras">${cifras}</div>` +
+      plazo + explicaBrecha;
   }
 
   /* ---------- la puerta: el asesor va con la suscripción ---------- */
