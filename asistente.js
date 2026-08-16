@@ -236,9 +236,147 @@
     return '/?' + p.toString();
   }
 
+  /** Comparación de dos ofertas (`comparar_creditos`): las dos lado a lado y
+   *  cuál sale más barata EN TOTAL —nunca por la cuota sola—, con un aviso
+   *  aparte cuando los plazos no coinciden: ahí comparar solo la cuota
+   *  engaña, y es la confusión que más dinero le cuesta a la gente en Perú.
+   *  `a.nombre`/`b.nombre`/`gana` los escribe el modelo: se escapan, nunca
+   *  crudos. No hay `c` (campos) útil aquí —el servidor no lo llena para esta
+   *  herramienta—, así que no se ofrece el puente al simulador ni se marca
+   *  `ultimo`: sin una firma de verdad, mejor que el panel se borre en el
+   *  siguiente turno a que se quede sirviendo una comparación vieja como si
+   *  fuera la respuesta a otra cosa. */
+  function pintaComparacion(r) {
+    const nombreA = esc(r.a.nombre), nombreB = esc(r.b.nombre);
+    const tono = r.gana ? 'bien' : 'neutro';
+    const titularTxt = r.gana
+      ? `<b>«${esc(r.gana)}» sale más barata</b>: ahorras ${soles(r.diferenciaTotal, 0)} en total frente a la otra.`
+      : `<b>Las dos ofertas salen prácticamente iguales</b> en total.`;
+    const titular = `<div class="entendi ${tono}">${titularTxt}</div>`;
+
+    const aviso = r.mismoPlazo === false
+      ? `<div class="entendi malo"><b>Ojo con comparar solo la cuota</b>: «${nombreA}» es a ` +
+        `${meses2texto(r.a.meses)} y «${nombreB}» a ${meses2texto(r.b.meses)} — plazos distintos. ` +
+        `La cuota más baja de las dos puede ser justo la del plazo más largo, y esa es la que sale ` +
+        `más cara en total. Por eso esto se decide por el total a pagar, no por la cuota.</div>`
+      : '';
+
+    const cifra = (k, v, alta) =>
+      `<div class="cifra${alta ? ' alta' : ''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+    const bloque = (o, nombre) =>
+      cifra(`«${nombre}» — total a pagar`, soles(o.total, 0), true) +
+      cifra(`«${nombre}» — cuota`, soles(o.cuota)) +
+      cifra(`«${nombre}» — intereses`, soles(o.intereses, 0)) +
+      cifra(`«${nombre}» — TCEA`, tcea(o.tcea));
+    const cifras = `<div class="cifras">${bloque(r.a, nombreA)}${bloque(r.b, nombreB)}</div>`;
+
+    salida.dataset.previo = '';
+    salida.innerHTML = titular + aviso + cifras;
+    ultimo = null;
+  }
+
+  /** Plan de deudas (`plan_de_deudas`): cuál atacar primero, en qué mes queda
+   *  libre de todas y cuánto ahorra frente a pagarlas sin ningún orden.
+   *  `mesesLibre` y `ahorro` llegan `null` cuando ni en 600 meses se libera:
+   *  eso no es un cero, es «no alcanza», y se dice con esas palabras, nunca
+   *  con `soles(null)` o un plazo inventado.
+   *
+   *  OJO: `cuantas` es lo único que este panel puede decir sobre cuántas
+   *  deudas entraron al cálculo. El contrato de hoy (`argsParaResultado()` en
+   *  `asesor.js`, repo API) no le hace llegar al navegador la lista original
+   *  de deudas que mandó el modelo, así que no hay con qué comparar `cuantas`
+   *  para avisar si alguna se descartó por el camino — se deja dicho en el
+   *  informe de esta tarea, no inventado aquí. */
+  function pintaPlanDeDeudas(r) {
+    const nombreAval = esc(r.primeroAvalancha), nombreNieve = esc(r.primeroNieve);
+
+    const frases = [`<b>Ataca primero «${nombreAval}»</b>, la de mayor tasa`];
+    let tono = 'neutro', cola = '';
+    if (r.mesesLibre != null) {
+      frases.push(`así quedas libre de todas en ${meses2texto(r.mesesLibre)}`);
+      if (r.ahorro != null && r.ahorro > 0) {
+        frases.push(`ahorrando ${soles(r.ahorro, 0)} en intereses frente a pagarlas sin ningún orden`);
+        tono = 'bien';
+      }
+    } else {
+      tono = 'malo';
+      cola = ' Con lo que pagas hoy, ese orden no te libera de todas dentro de 600 meses: para que ' +
+        'el plan cierre hace falta subir la cuota o meter un extra mensual.';
+    }
+    const titular = `<div class="entendi ${tono}">${frases.join(', ')}.${cola}</div>`;
+
+    const cifra = (k, v, alta) =>
+      `<div class="cifra${alta ? ' alta' : ''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+    const cifras = `<div class="cifras">` +
+      cifra('Quedas libre en', r.mesesLibre != null ? meses2texto(r.mesesLibre) : '—', true) +
+      cifra('Ahorras vs. sin orden', r.ahorro != null ? soles(r.ahorro, 0) : '—') +
+      cifra('Deudas en el plan', String(r.cuantas)) +
+      cifra('Saldo total', soles(r.totalSaldo, 0)) +
+      cifra('Cuota total al mes', soles(r.totalCuota, 0)) +
+      `</div>`;
+
+    const nieve = (r.primeroNieve && r.primeroNieve !== r.primeroAvalancha)
+      ? `<p class="plazo">Si prefieres tachar una deuda pronto para sentir que avanzas, empieza por ` +
+        `«${nombreNieve}», la de menor saldo — ahorra menos, pero se siente más rápido.</p>`
+      : '';
+
+    salida.dataset.previo = '';
+    salida.innerHTML = titular + cifras + nieve;
+    ultimo = null;
+  }
+
+  /** Tasas de mercado (`consultar_tasas`): dónde queda tu tasa contra el
+   *  mercado, cuál es la más barata y de dónde salen los datos. Se compara
+   *  contra la MEDIANA —lo que la gente cree que significa «promedio»—; el
+   *  «Promedio SBS» va ponderado por volumen y puede quedar por encima o por
+   *  debajo de la mediana según el tipo de crédito, así que se enseña aparte
+   *  y con esa aclaración, nunca como si fuera la misma cifra. */
+  function pintaTasas(r) {
+    const pct2 = v => v == null ? '—' : nf(v, 2) + ' %';
+    const nombreTipo = esc(r.nombre);
+    let tono, titularTxt;
+    if (r.tuya > r.mediana) {
+      tono = 'malo';
+      titularTxt = `<b>Tu ${nombreTipo} está por encima de la mediana del mercado</b>: pagas ` +
+        `${pct2(r.tuya)} y la mitad de las entidades cobra menos de ${pct2(r.mediana)}. El ` +
+        `${r.percentil} % del cuadro te sale más barato.`;
+    } else if (r.tuya < r.mediana) {
+      tono = 'bien';
+      titularTxt = `<b>Tu ${nombreTipo} está por debajo de la mediana del mercado</b>: pagas ` +
+        `${pct2(r.tuya)} contra ${pct2(r.mediana)} de mediana. Solo el ${r.percentil} % del cuadro ` +
+        `te sale más barato.`;
+    } else {
+      tono = 'neutro';
+      titularTxt = `<b>Tu ${nombreTipo} está justo en la mediana del mercado</b>, en ${pct2(r.tuya)}.`;
+    }
+    const titular = `<div class="entendi ${tono}">${titularTxt}</div>`;
+
+    const cifra = (k, v, alta) =>
+      `<div class="cifra${alta ? ' alta' : ''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+    const cifras = `<div class="cifras">` +
+      cifra('Tu tasa', pct2(r.tuya), true) +
+      cifra('Mediana del mercado', pct2(r.mediana)) +
+      cifra('La más barata', `«${esc(r.masBarata.entidad)}» ${pct2(r.masBarata.tasa)}`) +
+      cifra('La más cara', `«${esc(r.masCara.entidad)}» ${pct2(r.masCara.tasa)}`) +
+      `</div>`;
+
+    const nota = `<p class="brecha">El «Promedio» que publica la SBS (${pct2(r.promedioSBS)}) pondera ` +
+      `por volumen de créditos y puede quedar por encima o por debajo de la mediana: no es lo mismo, ` +
+      `y no es contra eso que se compara tu tasa arriba.</p>`;
+    const fuente = r.fuente ? `<p class="dePrevio">Fuente: ${esc(r.fuente)}.</p>` : '';
+
+    salida.dataset.previo = '';
+    salida.innerHTML = titular + cifras + nota + fuente;
+    ultimo = null;
+  }
+
   /* Ya no calcula nada: el motor lo hizo en el servidor y el asesor lo leyó
      antes de responder. Aquí solo se muestra. */
   function pinta(r, c) {
+    if (r.herramienta === 'comparar_creditos') return pintaComparacion(r);
+    if (r.herramienta === 'plan_de_deudas') return pintaPlanDeDeudas(r);
+    if (r.herramienta === 'consultar_tasas') return pintaTasas(r);
+
     const avisos = [];
     // Una tasa deducida NO es la que dio el banco. Decirlo no es un detalle:
     // es la diferencia entre una estimación y un dato, y quien decide sobre
